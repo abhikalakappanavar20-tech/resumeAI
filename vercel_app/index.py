@@ -8,18 +8,15 @@ if PROJECT_ROOT not in sys.path:
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'resumeiq.settings')
 
-# Initialize Django
 import django
 django.setup()
 
-# Run migrations on cold start
 try:
     from django.core.management import call_command
     call_command('migrate', '--run-syncdb', verbosity=0)
 except Exception:
     pass
 
-# Create test users if needed
 try:
     from django.contrib.auth import get_user_model
     User = get_user_model()
@@ -34,6 +31,5 @@ try:
 except Exception:
     pass
 
-# Import the WSGI application
 from django.core.wsgi import get_wsgi_application
 application = get_wsgi_application()
