@@ -1,0 +1,64 @@
+{% extends 'base/base.html' %}
+{% block title %}Profile - ResumeIQ{% endblock %}
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <div class="col-lg-4 mb-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center p-4">
+                    {% if user.profile_picture %}
+                        <img src="{{ user.profile_picture.url }}" class="rounded-circle mb-3" width="120" height="120">
+                    {% else %}
+                        <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width:120px;height:120px;">
+                            <i class="fas fa-user fa-3x"></i>
+                        </div>
+                    {% endif %}
+                    <h4>{{ user.get_full_name|default:user.username }}</h4>
+                    <p class="text-muted">{{ user.email }}</p>
+                    <span class="badge bg-primary">{{ user.role|title }}</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0"><i class="fas fa-edit me-2"></i>Edit Profile</h5>
+                </div>
+                <div class="card-body p-4">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <h6 class="text-muted mb-3">Personal Information</h6>
+                        {% for field in user_form %}
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">{{ field.label }}</label>
+                            {{ field }}
+                            {% if field.errors %}
+                            <div class="text-danger small">{{ field.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                        
+                        {% if profile_form %}
+                        <hr>
+                        <h6 class="text-muted mb-3">{% if user.role == 'candidate' %}Professional Details{% else %}Company Details{% endif %}</h6>
+                        {% for field in profile_form %}
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">{{ field.label }}</label>
+                            {{ field }}
+                            {% if field.errors %}
+                            <div class="text-danger small">{{ field.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                        {% endif %}
+                        
+                        <button type="submit" class="btn btn-primary px-4">
+                            <i class="fas fa-save me-2"></i>Save Changes
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

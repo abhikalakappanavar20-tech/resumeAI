@@ -1,0 +1,750 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block title %}ResumeIQ - AI-Powered Resume Analyzer & Job Matching{% endblock %}
+
+{% block extra_css %}
+<style>
+/* ===== HERO ===== */
+.hero-section {
+    position: relative;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+    overflow: hidden;
+    color: #fff;
+}
+.hero-section::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle at 30% 50%, rgba(99,102,241,0.15) 0%, transparent 50%),
+                radial-gradient(circle at 70% 80%, rgba(236,72,153,0.1) 0%, transparent 50%);
+    animation: heroPulse 8s ease-in-out infinite;
+}
+@keyframes heroPulse {
+    0%, 100% { transform: scale(1) rotate(0deg); }
+    50% { transform: scale(1.05) rotate(2deg); }
+}
+.hero-particle {
+    position: absolute;
+    border-radius: 50%;
+    opacity: 0.12;
+    animation: floatParticle linear infinite;
+}
+.hero-particle:nth-child(1) { width:300px; height:300px; background:#6366f1; top:10%; left:5%; animation-duration:20s; }
+.hero-particle:nth-child(2) { width:200px; height:200px; background:#ec4899; top:60%; right:10%; animation-duration:15s; animation-delay:-5s; }
+.hero-particle:nth-child(3) { width:150px; height:150px; background:#06b6d4; bottom:10%; left:30%; animation-duration:25s; animation-delay:-10s; }
+.hero-particle:nth-child(4) { width:100px; height:100px; background:#f59e0b; top:20%; right:25%; animation-duration:18s; animation-delay:-3s; }
+@keyframes floatParticle {
+    0% { transform: translateY(0) translateX(0) scale(1); }
+    25% { transform: translateY(-30px) translateX(20px) scale(1.05); }
+    50% { transform: translateY(-15px) translateX(-15px) scale(0.95); }
+    75% { transform: translateY(-40px) translateX(10px) scale(1.02); }
+    100% { transform: translateY(0) translateX(0) scale(1); }
+}
+.hero-content { position: relative; z-index: 2; }
+.hero-title {
+    font-size: 3.5rem;
+    font-weight: 800;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+}
+.hero-title .gradient-text {
+    background: linear-gradient(135deg, #6366f1 0%, #a78bfa 40%, #ec4899 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+.hero-subtitle {
+    font-size: 1.2rem;
+    color: rgba(255,255,255,0.7);
+    max-width: 520px;
+    line-height: 1.7;
+}
+.hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 50px;
+    padding: 8px 18px;
+    font-size: 0.85rem;
+    color: rgba(255,255,255,0.8);
+    margin-bottom: 1.5rem;
+    backdrop-filter: blur(10px);
+    animation: fadeInDown 0.8s ease;
+}
+.hero-badge .dot {
+    width: 8px;
+    height: 8px;
+    background: #22c55e;
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+}
+.btn-hero-primary {
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+    border: none;
+    padding: 14px 36px;
+    font-size: 1.05rem;
+    font-weight: 600;
+    border-radius: 14px;
+    color: #fff;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 25px rgba(99,102,241,0.4);
+}
+.btn-hero-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 35px rgba(99,102,241,0.55);
+    color: #fff;
+}
+.btn-hero-outline {
+    border: 2px solid rgba(255,255,255,0.25);
+    padding: 14px 36px;
+    font-size: 1.05rem;
+    font-weight: 600;
+    border-radius: 14px;
+    color: #fff;
+    background: rgba(255,255,255,0.05);
+    backdrop-filter: blur(5px);
+    transition: all 0.3s ease;
+}
+.btn-hero-outline:hover {
+    border-color: rgba(255,255,255,0.5);
+    background: rgba(255,255,255,0.1);
+    color: #fff;
+    transform: translateY(-2px);
+}
+
+/* Hero Preview Card */
+.hero-preview {
+    position: relative;
+    z-index: 2;
+}
+.preview-card {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 24px;
+    padding: 32px;
+    backdrop-filter: blur(20px);
+    animation: floatCard 6s ease-in-out infinite;
+}
+@keyframes floatCard {
+    0%, 100% { transform: translateY(0) rotateY(-2deg) rotateX(1deg); }
+    50% { transform: translateY(-12px) rotateY(2deg) rotateX(-1deg); }
+}
+.preview-card .card-title { color: rgba(255,255,255,0.9); font-weight: 600; }
+.preview-score-ring {
+    width: 160px;
+    height: 160px;
+    border-radius: 50%;
+    background: conic-gradient(#6366f1 0%, #a78bfa 40%, rgba(255,255,255,0.08) 40%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 20px;
+    position: relative;
+    animation: scoreRotate 3s ease-out forwards;
+}
+@keyframes scoreRotate {
+    from { background: conic-gradient(#6366f1 0%, rgba(255,255,255,0.08) 0%); }
+    to { background: conic-gradient(#6366f1 0%, #a78bfa 40%, rgba(255,255,255,0.08) 40%); }
+}
+.preview-score-ring::before {
+    content: '';
+    width: 130px;
+    height: 130px;
+    border-radius: 50%;
+    background: rgba(15,12,41,0.9);
+    position: absolute;
+}
+.preview-score-value {
+    font-size: 2.8rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, #6366f1, #a78bfa);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    position: relative;
+    z-index: 1;
+}
+.preview-score-label {
+    font-size: 0.8rem;
+    color: rgba(255,255,255,0.5);
+    position: relative;
+    z-index: 1;
+}
+.preview-stat {
+    text-align: center;
+    padding: 12px 0;
+}
+.preview-stat-value {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #fff;
+}
+.preview-stat-label {
+    font-size: 0.75rem;
+    color: rgba(255,255,255,0.5);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+.preview-bar {
+    height: 6px;
+    border-radius: 3px;
+    background: rgba(255,255,255,0.08);
+    overflow: hidden;
+    margin-top: 6px;
+}
+.preview-bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    animation: barGrow 2s ease-out forwards;
+    transform-origin: left;
+}
+@keyframes barGrow {
+    from { width: 0 !important; }
+}
+
+/* ===== SCROLL ANIMATIONS ===== */
+.fade-up {
+    opacity: 0;
+    transform: translateY(40px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+}
+.fade-up.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+.fade-up-delay-1 { transition-delay: 0.1s; }
+.fade-up-delay-2 { transition-delay: 0.2s; }
+.fade-up-delay-3 { transition-delay: 0.3s; }
+.fade-up-delay-4 { transition-delay: 0.4s; }
+.fade-up-delay-5 { transition-delay: 0.5s; }
+
+/* ===== FEATURES ===== */
+.features-section {
+    background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+    position: relative;
+}
+.features-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(99,102,241,0.2), transparent);
+}
+.section-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: linear-gradient(135deg, rgba(99,102,241,0.08), rgba(139,92,246,0.08));
+    border: 1px solid rgba(99,102,241,0.15);
+    border-radius: 50px;
+    padding: 6px 16px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #6366f1;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 1rem;
+}
+.section-title {
+    font-size: 2.5rem;
+    font-weight: 800;
+    color: #1e293b;
+    letter-spacing: -0.02em;
+}
+.section-subtitle {
+    font-size: 1.1rem;
+    color: #64748b;
+    max-width: 600px;
+    margin: 0 auto;
+}
+.feature-card {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 20px;
+    padding: 32px;
+    height: 100%;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    position: relative;
+    overflow: hidden;
+}
+.feature-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--card-accent, #6366f1), var(--card-accent-end, #8b5cf6));
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+.feature-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.08);
+    border-color: transparent;
+}
+.feature-card:hover::before {
+    opacity: 1;
+}
+.feature-icon-wrapper {
+    width: 64px;
+    height: 64px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    margin-bottom: 1.2rem;
+    transition: transform 0.3s ease;
+}
+.feature-card:hover .feature-icon-wrapper {
+    transform: scale(1.1) rotate(-3deg);
+}
+.feature-card h5 {
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: 0.5rem;
+}
+.feature-card p {
+    color: #64748b;
+    font-size: 0.92rem;
+    line-height: 1.6;
+    margin: 0;
+}
+
+/* ===== HOW IT WORKS ===== */
+.how-section { background: #fff; }
+.step-card {
+    text-align: center;
+    padding: 24px;
+    position: relative;
+}
+.step-icon {
+    width: 80px;
+    height: 80px;
+    border-radius: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    margin: 0 auto 1.5rem;
+    position: relative;
+    transition: transform 0.3s ease;
+}
+.step-card:hover .step-icon {
+    transform: scale(1.1);
+}
+.step-icon::after {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    border-radius: 28px;
+    background: inherit;
+    opacity: 0.15;
+    filter: blur(12px);
+    z-index: -1;
+}
+.step-number {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #1e293b;
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.step-connector {
+    position: absolute;
+    top: 60px;
+    right: -30%;
+    width: 60%;
+    height: 2px;
+    background: linear-gradient(90deg, #e2e8f0, transparent);
+}
+
+/* ===== STATS ===== */
+.stats-section {
+    background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+    position: relative;
+    overflow: hidden;
+}
+.stats-section::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 50% 50%, rgba(99,102,241,0.1) 0%, transparent 70%);
+}
+.stat-item { text-align: center; position: relative; z-index: 1; }
+.stat-number {
+    font-size: 3rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, #a78bfa, #ec4899);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    line-height: 1;
+    margin-bottom: 0.5rem;
+}
+.stat-label {
+    font-size: 0.9rem;
+    color: rgba(255,255,255,0.6);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 500;
+}
+
+/* ===== CTA ===== */
+.cta-section {
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a78bfa 100%);
+    position: relative;
+    overflow: hidden;
+}
+.cta-section::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+}
+.cta-section .btn {
+    background: #fff;
+    color: #6366f1;
+    font-weight: 700;
+    padding: 16px 48px;
+    border-radius: 14px;
+    font-size: 1.1rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 25px rgba(0,0,0,0.15);
+}
+.cta-section .btn:hover {
+    transform: translateY(-3px) scale(1.02);
+    box-shadow: 0 8px 35px rgba(0,0,0,0.25);
+}
+
+/* ===== KEYFRAMES ===== */
+@keyframes fadeInDown {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+@keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(1.5); }
+}
+@keyframes countUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 991px) {
+    .hero-title { font-size: 2.5rem; }
+    .hero-preview { margin-top: 3rem; }
+    .preview-card { transform: none !important; }
+    .step-connector { display: none; }
+}
+@media (max-width: 767px) {
+    .hero-title { font-size: 2rem; }
+    .section-title { font-size: 1.8rem; }
+    .stat-number { font-size: 2.2rem; }
+    .preview-score-ring { width: 130px; height: 130px; }
+    .preview-score-ring::before { width: 105px; height: 105px; }
+    .preview-score-value { font-size: 2.2rem; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- HERO -->
+<section class="hero-section">
+    <div class="hero-particle"></div>
+    <div class="hero-particle"></div>
+    <div class="hero-particle"></div>
+    <div class="hero-particle"></div>
+
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-6 hero-content">
+                <div class="hero-badge">
+                    <span class="dot"></span>
+                    AI-Powered Platform
+                </div>
+                <h1 class="hero-title mb-4">
+                    Land Your <br>
+                    <span class="gradient-text">Dream Job</span><br>
+                    With AI
+                </h1>
+                <p class="hero-subtitle mb-4">
+                    Upload your resume, get an instant ATS score, identify skill gaps, generate cover letters, and find matching jobs — all powered by AI.
+                </p>
+                <div class="d-flex gap-3 flex-wrap">
+                    {% if user.is_authenticated %}
+                        {% if user.role == 'candidate' %}
+                            <a href="{% url 'resumes:upload' %}" class="btn btn-hero-primary">
+                                <i class="fas fa-upload me-2"></i>Upload Resume
+                            </a>
+                            <a href="{% url 'jobs:job_list' %}" class="btn btn-hero-outline">
+                                <i class="fas fa-briefcase me-2"></i>Browse Jobs
+                            </a>
+                        {% elif user.role == 'recruiter' %}
+                            <a href="{% url 'jobs:create' %}" class="btn btn-hero-primary">
+                                <i class="fas fa-plus me-2"></i>Post a Job
+                            </a>
+                            <a href="{% url 'recruiter:search_candidates' %}" class="btn btn-hero-outline">
+                                <i class="fas fa-search me-2"></i>Find Candidates
+                            </a>
+                        {% endif %}
+                    {% else %}
+                        <a href="{% url 'accounts:register' %}" class="btn btn-hero-primary">
+                            <i class="fas fa-rocket me-2"></i>Get Started Free
+                        </a>
+                        <a href="{% url 'accounts:login' %}" class="btn btn-hero-outline">
+                            <i class="fas fa-sign-in-alt me-2"></i>Login
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="col-lg-6 hero-preview">
+                <div class="preview-card">
+                    <div class="d-flex align-items-center mb-3">
+                        <i class="fas fa-chart-line text-primary me-2"></i>
+                        <span class="card-title mb-0">ATS Score Preview</span>
+                    </div>
+                    <div class="preview-score-ring">
+                        <div>
+                            <div class="preview-score-value">87</div>
+                            <div class="preview-score-label">/ 100</div>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-4 preview-stat">
+                            <div class="preview-stat-value">95%</div>
+                            <div class="preview-stat-label">Formatting</div>
+                            <div class="preview-bar"><div class="preview-bar-fill" style="width:95%; background: linear-gradient(90deg, #22c55e, #4ade80);"></div></div>
+                        </div>
+                        <div class="col-4 preview-stat">
+                            <div class="preview-stat-value">82%</div>
+                            <div class="preview-stat-label">Skills</div>
+                            <div class="preview-bar"><div class="preview-bar-fill" style="width:82%; background: linear-gradient(90deg, #6366f1, #a78bfa);"></div></div>
+                        </div>
+                        <div class="col-4 preview-stat">
+                            <div class="preview-stat-value">90%</div>
+                            <div class="preview-stat-label">Experience</div>
+                            <div class="preview-bar"><div class="preview-bar-fill" style="width:90%; background: linear-gradient(90deg, #06b6d4, #22d3ee);"></div></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- FEATURES -->
+<section class="features-section py-5">
+    <div class="container py-5">
+        <div class="text-center mb-5">
+            <div class="section-label"><i class="fas fa-sparkles"></i> Features</div>
+            <h2 class="section-title mb-3">Powerful AI Features</h2>
+            <p class="section-subtitle">Everything you need to analyze, optimize, and land your dream job</p>
+        </div>
+        <div class="row g-4">
+            <div class="col-md-4 fade-up">
+                <div class="feature-card" style="--card-accent: #6366f1; --card-accent-end: #818cf8;">
+                    <div class="feature-icon-wrapper" style="background: linear-gradient(135deg, rgba(99,102,241,0.1), rgba(99,102,241,0.05)); color: #6366f1;">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <h5>AI Resume Analysis</h5>
+                    <p>Extract skills, experience, education and more using advanced NLP and AI parsing.</p>
+                </div>
+            </div>
+            <div class="col-md-4 fade-up fade-up-delay-1">
+                <div class="feature-card" style="--card-accent: #22c55e; --card-accent-end: #4ade80;">
+                    <div class="feature-icon-wrapper" style="background: linear-gradient(135deg, rgba(34,197,94,0.1), rgba(34,197,94,0.05)); color: #22c55e;">
+                        <i class="fas fa-chart-pie"></i>
+                    </div>
+                    <h5>ATS Score</h5>
+                    <p>See how your resume scores against Applicant Tracking Systems with detailed breakdown.</p>
+                </div>
+            </div>
+            <div class="col-md-4 fade-up fade-up-delay-2">
+                <div class="feature-card" style="--card-accent: #f59e0b; --card-accent-end: #fbbf24;">
+                    <div class="feature-icon-wrapper" style="background: linear-gradient(135deg, rgba(245,158,11,0.1), rgba(245,158,11,0.05)); color: #f59e0b;">
+                        <i class="fas fa-briefcase"></i>
+                    </div>
+                    <h5>Job Matching</h5>
+                    <p>Get AI-powered job recommendations perfectly matched to your skills and experience.</p>
+                </div>
+            </div>
+            <div class="col-md-4 fade-up fade-up-delay-3">
+                <div class="feature-card" style="--card-accent: #06b6d4; --card-accent-end: #22d3ee;">
+                    <div class="feature-icon-wrapper" style="background: linear-gradient(135deg, rgba(6,182,212,0.1), rgba(6,182,212,0.05)); color: #06b6d4;">
+                        <i class="fas fa-file-alt"></i>
+                    </div>
+                    <h5>Cover Letter Generator</h5>
+                    <p>Generate personalized, professional cover letters tailored to any job application.</p>
+                </div>
+            </div>
+            <div class="col-md-4 fade-up fade-up-delay-4">
+                <div class="feature-card" style="--card-accent: #ec4899; --card-accent-end: #f472b6;">
+                    <div class="feature-icon-wrapper" style="background: linear-gradient(135deg, rgba(236,72,153,0.1), rgba(236,72,153,0.05)); color: #ec4899;">
+                        <i class="fas fa-comments"></i>
+                    </div>
+                    <h5>Interview Questions</h5>
+                    <p>Practice with AI-generated interview questions tailored to your specific skill set.</p>
+                </div>
+            </div>
+            <div class="col-md-4 fade-up fade-up-delay-5">
+                <div class="feature-card" style="--card-accent: #8b5cf6; --card-accent-end: #a78bfa;">
+                    <div class="feature-icon-wrapper" style="background: linear-gradient(135deg, rgba(139,92,246,0.1), rgba(139,92,246,0.05)); color: #8b5cf6;">
+                        <i class="fas fa-chart-bar"></i>
+                    </div>
+                    <h5>Skill Gap Analysis</h5>
+                    <p>Identify missing skills and get a personalized learning roadmap for career growth.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="how-section py-5">
+    <div class="container py-5">
+        <div class="text-center mb-5">
+            <div class="section-label"><i class="fas fa-route"></i> Process</div>
+            <h2 class="section-title mb-3">How It Works</h2>
+            <p class="section-subtitle">Three simple steps to transform your career</p>
+        </div>
+        <div class="row g-4 justify-content-center">
+            <div class="col-md-4 fade-up">
+                <div class="step-card">
+                    <div class="step-icon" style="background: linear-gradient(135deg, #6366f1, #818cf8); color: #fff;">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        <span class="step-number">1</span>
+                    </div>
+                    <h5 class="fw-bold">Upload Resume</h5>
+                    <p class="text-muted">Upload your resume in PDF or DOCX format. Our AI will parse and analyze every section.</p>
+                    <div class="step-connector"></div>
+                </div>
+            </div>
+            <div class="col-md-4 fade-up fade-up-delay-2">
+                <div class="step-card">
+                    <div class="step-icon" style="background: linear-gradient(135deg, #ec4899, #f472b6); color: #fff;">
+                        <i class="fas fa-brain"></i>
+                        <span class="step-number">2</span>
+                    </div>
+                    <h5 class="fw-bold">Get AI Analysis</h5>
+                    <p class="text-muted">Receive your ATS score, improvement suggestions, skill gaps, and learning roadmap.</p>
+                </div>
+            </div>
+            <div class="col-md-4 fade-up fade-up-delay-4">
+                <div class="step-card">
+                    <div class="step-icon" style="background: linear-gradient(135deg, #22c55e, #4ade80); color: #fff;">
+                        <i class="fas fa-trophy"></i>
+                        <span class="step-number">3</span>
+                    </div>
+                    <h5 class="fw-bold">Find Your Match</h5>
+                    <p class="text-muted">Get matched with jobs, generate cover letters, and ace your interviews with AI prep.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- STATS -->
+<section class="stats-section py-5">
+    <div class="container py-5">
+        <div class="row g-4 text-center">
+            <div class="col-6 col-md-3 fade-up">
+                <div class="stat-item">
+                    <div class="stat-number" data-count="10000">0</div>
+                    <div class="stat-label">Resumes Analyzed</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3 fade-up fade-up-delay-1">
+                <div class="stat-item">
+                    <div class="stat-number" data-count="5000">0</div>
+                    <div class="stat-label">Jobs Matched</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3 fade-up fade-up-delay-2">
+                <div class="stat-item">
+                    <div class="stat-number" data-count="2500">0</div>
+                    <div class="stat-label">Cover Letters</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3 fade-up fade-up-delay-3">
+                <div class="stat-item">
+                    <div class="stat-number" data-count="95">0</div>
+                    <div class="stat-label">% Satisfaction</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section py-5 text-white text-center">
+    <div class="container py-5 position-relative">
+        <h2 class="fw-bold mb-3" style="font-size: 2.5rem;">Ready to Boost Your Career?</h2>
+        <p class="mb-4" style="font-size: 1.15rem; color: rgba(255,255,255,0.85); max-width: 600px; margin: 0 auto;">
+            Join thousands of job seekers who improved their resumes and landed interviews with ResumeIQ
+        </p>
+        <a href="{% url 'accounts:register' %}" class="btn">
+            <i class="fas fa-rocket me-2"></i>Get Started Free
+        </a>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Scroll-triggered fade-in
+const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+        }
+    });
+}, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
+
+document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
+
+// Animated counters
+const counterObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            const el = entry.target;
+            const target = parseInt(el.dataset.count);
+            const suffix = el.textContent.includes('%') || el.closest('.stat-item')?.querySelector('.stat-label')?.textContent.includes('%') ? '%' : '+';
+            let current = 0;
+            const increment = target / 60;
+            const timer = setInterval(() => {
+                current += increment;
+                if (current >= target) {
+                    current = target;
+                    clearInterval(timer);
+                }
+                el.textContent = Math.floor(current).toLocaleString() + suffix;
+            }, 30);
+            counterObserver.unobserve(el);
+        }
+    });
+}, { threshold: 0.5 });
+
+document.querySelectorAll('.stat-number[data-count]').forEach(el => counterObserver.observe(el));
+</script>
+{% endblock %}

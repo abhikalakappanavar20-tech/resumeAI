@@ -1,0 +1,37 @@
+{% extends 'base/base.html' %}
+{% block title %}Shortlisted Candidates - ResumeIQ{% endblock %}
+{% block content %}
+<div class="container py-5">
+    <h2 class="fw-bold mb-4"><i class="fas fa-star me-2 text-warning"></i>Shortlisted Candidates</h2>
+    <div class="row g-4">
+        {% for item in shortlisted %}
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex align-items-start">
+                        <div class="bg-warning text-dark rounded-circle d-flex align-items-center justify-content-center me-3" style="width:50px;height:50px;">
+                            {{ item.candidate.first_name.0 }}{{ item.candidate.last_name.0 }}
+                        </div>
+                        <div class="flex-grow-1">
+                            <h5><a href="{% url 'recruiter:candidate_profile' item.candidate.pk %}" class="text-decoration-none">{{ item.candidate.get_full_name }}</a></h5>
+                            <p class="text-muted small mb-1">{{ item.candidate.email }}</p>
+                            {% if item.job %}
+                            <span class="badge bg-primary">{{ item.job.title }}</span>
+                            {% endif %}
+                            {% if item.notes %}
+                            <p class="mt-2 small">{{ item.notes }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12 text-center py-5">
+            <i class="fas fa-star fa-4x text-muted mb-3"></i>
+            <h5>No candidates shortlisted yet</h5>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

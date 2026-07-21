@@ -1,0 +1,54 @@
+{% extends 'base/base.html' %}
+{% block title %}Sign Up - ResumeIQ{% endblock %}
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow-sm border-0">
+                <div class="card-body p-5">
+                    <div class="text-center mb-4">
+                        <i class="fas fa-user-plus fa-3x text-primary mb-3"></i>
+                        <h3>Create Account</h3>
+                        <p class="text-muted">Join ResumeIQ today</p>
+                    </div>
+                    
+                    <div class="btn-group w-100 mb-4" role="group">
+                        <a href="?role=candidate" class="btn {% if role == 'candidate' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                            <i class="fas fa-user me-1"></i>Candidate
+                        </a>
+                        <a href="?role=recruiter" class="btn {% if role == 'recruiter' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                            <i class="fas fa-building me-1"></i>Recruiter
+                        </a>
+                    </div>
+
+                    <form method="post">
+                        {% csrf_token %}
+                        {% for field in form %}
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">{{ field.label }}</label>
+                            <input type="{{ field.field.widget.input_type|default:'text' }}" 
+                                   name="{{ field.name }}" 
+                                   class="form-control {% if field.errors %}is-invalid{% endif %}"
+                                   placeholder="{{ field.label }}"
+                                   value="{{ field.value|default:'' }}">
+                            {% if field.errors %}
+                            <div class="invalid-feedback">{{ field.errors.0 }}</div>
+                            {% endif %}
+                            {% if field.help_text %}
+                            <small class="text-muted">{{ field.help_text }}</small>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                        <button type="submit" class="btn btn-primary w-100 py-2 mt-3">
+                            <i class="fas fa-rocket me-2"></i>Create Account
+                        </button>
+                    </form>
+                    <p class="text-center mt-4 mb-0">
+                        Already have an account? <a href="{% url 'accounts:login' %}">Login</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

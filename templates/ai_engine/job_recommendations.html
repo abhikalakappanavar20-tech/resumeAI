@@ -1,0 +1,44 @@
+{% extends 'base/base.html' %}
+{% block title %}Job Recommendations - ResumeIQ{% endblock %}
+{% block content %}
+<div class="container py-5">
+    <h2 class="fw-bold mb-4"><i class="fas fa-briefcase me-2 text-success"></i>Job Recommendations</h2>
+    <p class="text-muted">Based on your resume: <strong>{{ resume.title }}</strong></p>
+    
+    <div class="row g-4">
+        {% for rec in recommendations %}
+        <div class="col-md-6">
+            <div class="card job-card h-100 position-relative">
+                <div class="job-match-badge badge bg-{% if rec.match_score >= 80 %}success{% elif rec.match_score >= 60 %}warning{% else %}secondary{% endif %}">
+                    {{ rec.match_score }}% Match
+                </div>
+                <div class="card-body">
+                    <h5><a href="{% url 'jobs:job_detail' rec.job.pk %}" class="text-decoration-none">{{ rec.job.title }}</a></h5>
+                    <p class="text-muted">{{ rec.job.company_name }} &bull; {{ rec.job.location }}</p>
+                    <div class="mb-2">
+                        {% for skill in rec.matching_skills %}
+                        <span class="skill-tag matched">{{ skill }}</span>
+                        {% endfor %}
+                    </div>
+                    {% if rec.missing_skills %}
+                    <div class="mb-2">
+                        <small class="text-muted">Missing:</small>
+                        {% for skill in rec.missing_skills %}
+                        <span class="skill-tag missing small">{{ skill }}</span>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    <a href="{% url 'jobs:job_detail' rec.job.pk %}" class="btn btn-outline-primary btn-sm mt-2">View Details</a>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12 text-center py-5">
+            <i class="fas fa-briefcase fa-4x text-muted mb-3"></i>
+            <h5>No job recommendations yet</h5>
+            <p class="text-muted">Upload and analyze a resume first</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,341 @@
+{% extends 'base/base.html' %}
+{% block title %}{{ resume.title }} - ResumeIQ{% endblock %}
+{% block content %}
+<div class="container py-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold">{{ resume.title }}</h2>
+            <span class="badge bg-{% if resume.status == 'analyzed' %}success{% elif resume.status == 'parsing' %}warning{% elif resume.status == 'error' %}danger{% else %}secondary{% endif %}">{{ resume.get_status_display }}</span>
+            <small class="text-muted ms-2">Uploaded {{ resume.created_at|date:"M d, Y" }}</small>
+        </div>
+        <div class="d-flex gap-2">
+            {% if resume.status != 'analyzed' %}
+            <a href="{% url 'ai_engine:analyze' resume.pk %}" class="btn btn-primary btn-ai-action">
+                <i class="fas fa-robot me-2"></i>Analyze Resume
+            </a>
+            {% endif %}
+            <a href="{% url 'resumes:delete' resume.pk %}" class="btn btn-outline-danger">
+                <i class="fas fa-trash me-1"></i>Delete
+            </a>
+        </div>
+    </div>
+
+    {% if resume.status == 'analyzed' %}
+    <!-- ATS Score Card -->
+    {% if ats_score %}
+    <div class="row g-4 mb-4">
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm text-center p-4 ats-score-card">
+                <h5 class="mb-3"><i class="fas fa-chart-pie me-2 text-primary"></i>Overall ATS Score</h5>
+                <div class="ats-score-ring">
+                    <span class="ats-score-number text-primary">{{ ats_score.overall_score }}</span>
+                </div>
+                <p class="mt-3 text-muted">out of 100</p>
+            </div>
+        </div>
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm p-4">
+                <h5 class="mb-4"><i class="fas fa-chart-bar me-2 text-primary"></i>Score Breakdown</h5>
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>Formatting</span>
+                        <span class="fw-bold">{{ ats_score.formatting_score }}%</span>
+                    </div>
+                    <div class="score-bar"><div class="score-bar-fill bg-success" data-width="{{ ats_score.formatting_score }}" style="width:0%"></div></div>
+                </div>
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>Skills Match</span>
+                        <span class="fw-bold">{{ ats_score.skills_match_score }}%</span>
+                    </div>
+                    <div class="score-bar"><div class="score-bar-fill bg-primary" data-width="{{ ats_score.skills_match_score }}" style="width:0%"></div></div>
+                </div>
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>Experience</span>
+                        <span class="fw-bold">{{ ats_score.experience_score }}%</span>
+                    </div>
+                    <div class="score-bar"><div class="score-bar-fill bg-info" data-width="{{ ats_score.experience_score }}" style="width:0%"></div></div>
+                </div>
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>Education</span>
+                        <span class="fw-bold">{{ ats_score.education_score }}%</span>
+                    </div>
+                    <div class="score-bar"><div class="score-bar-fill bg-warning" data-width="{{ ats_score.education_score }}" style="width:0%"></div></div>
+                </div>
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>Keywords</span>
+                        <span class="fw-bold">{{ ats_score.keywords_score }}%</span>
+                    </div>
+                    <div class="score-bar"><div class="score-bar-fill bg-danger" data-width="{{ ats_score.keywords_score }}" style="width:0%"></div></div>
+                </div>
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>Projects</span>
+                        <span class="fw-bold">{{ ats_score.projects_score }}%</span>
+                    </div>
+                    <div class="score-bar"><div class="score-bar-fill bg-secondary" data-width="{{ ats_score.projects_score }}" style="width:0%"></div></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if ats_score.suggestions %}
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-warning bg-opacity-10">
+            <h5 class="mb-0"><i class="fas fa-lightbulb me-2 text-warning"></i>Improvement Suggestions</h5>
+        </div>
+        <div class="card-body">
+            <ul class="list-group list-group-flush">
+                {% for suggestion in ats_score.suggestions %}
+                <li class="list-group-item"><i class="fas fa-arrow-right text-primary me-2"></i>{{ suggestion }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if ats_score.missing_keywords %}
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-danger bg-opacity-10">
+            <h5 class="mb-0"><i class="fas fa-exclamation-triangle me-2 text-danger"></i>Missing Keywords</h5>
+        </div>
+        <div class="card-body">
+            {% for kw in ats_score.missing_keywords %}
+            <span class="skill-tag missing">{{ kw }}</span>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+    {% endif %}
+    {% endif %}
+
+    <!-- Extracted Data -->
+    {% if extracted_data %}
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white">
+            <h5 class="mb-0"><i class="fas fa-info-circle me-2 text-primary"></i>Extracted Information</h5>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-6"><strong>Name:</strong> {{ extracted_data.name|default:"N/A" }}</div>
+                <div class="col-md-6"><strong>Email:</strong> {{ extracted_data.email|default:"N/A" }}</div>
+                <div class="col-md-6"><strong>Phone:</strong> {{ extracted_data.phone|default:"N/A" }}</div>
+                <div class="col-md-6"><strong>Location:</strong> {{ extracted_data.location|default:"N/A" }}</div>
+            </div>
+            {% if extracted_data.summary %}
+            <hr>
+            <h6>Summary</h6>
+            <p>{{ extracted_data.summary }}</p>
+            {% endif %}
+            {% if extracted_data.skills %}
+            <hr>
+            <h6>Skills</h6>
+            {% for skill in extracted_data.skills %}
+            <span class="skill-tag current">{{ skill }}</span>
+            {% endfor %}
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- AI Actions -->
+    {% if resume.status == 'analyzed' %}
+    <div class="row g-4 mb-4">
+        <div class="col-md-4">
+            <form method="post" action="{% url 'ai_engine:cover_letter' resume.pk %}">
+                {% csrf_token %}
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body text-center p-4">
+                        <i class="fas fa-file-alt fa-2x text-info mb-3"></i>
+                        <h6>Generate Cover Letter</h6>
+                        <input type="text" name="company" class="form-control mb-2" placeholder="Company name" required>
+                        <input type="text" name="role" class="form-control mb-2" placeholder="Job role" required>
+                        <button type="submit" class="btn btn-info btn-sm w-100 btn-ai-action">Generate</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+        <div class="col-md-4">
+            <form method="post" action="{% url 'ai_engine:interview_questions' resume.pk %}">
+                {% csrf_token %}
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body text-center p-4">
+                        <i class="fas fa-comments fa-2x text-danger mb-3"></i>
+                        <h6>Interview Questions</h6>
+                        <p class="text-muted small">Based on your skills</p>
+                        <button type="submit" class="btn btn-danger btn-sm w-100 btn-ai-action">Generate</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+        <div class="col-md-4">
+            <form method="post" action="{% url 'ai_engine:improvements' resume.pk %}">
+                {% csrf_token %}
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body text-center p-4">
+                        <i class="fas fa-magic fa-2x text-warning mb-3"></i>
+                        <h6>Resume Improvements</h6>
+                        <p class="text-muted small">AI-powered suggestions</p>
+                        <button type="submit" class="btn btn-warning btn-sm w-100 btn-ai-action">Improve</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-md-6">
+            <form method="post" action="{% url 'ai_engine:skill_gap' resume.pk %}">
+                {% csrf_token %}
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body">
+                        <h6><i class="fas fa-chart-bar me-2 text-secondary"></i>Skill Gap Analysis</h6>
+                        <input type="text" name="target_role" class="form-control mb-2" placeholder="Target role (e.g., AI Engineer)" required>
+                        <button type="submit" class="btn btn-secondary btn-sm btn-ai-action">Analyze Gap</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+        <div class="col-md-6">
+            <a href="{% url 'ai_engine:job_recommendations' resume.pk %}" class="card border-0 shadow-sm text-decoration-none h-100">
+                <div class="card-body">
+                    <h6><i class="fas fa-briefcase me-2 text-success"></i>Job Recommendations</h6>
+                    <p class="text-muted small mb-2">Find matching jobs based on your resume</p>
+                    <span class="btn btn-success btn-sm">View Recommendations</span>
+                </div>
+            </a>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Cover Letters -->
+    {% if cover_letters %}
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white"><h5 class="mb-0"><i class="fas fa-file-alt me-2 text-info"></i>Cover Letters</h5></div>
+        <div class="card-body">
+            {% for cl in cover_letters %}
+            <div class="cover-letter-content mb-3">
+                <h6 class="text-muted">{{ cl.job_title }} at {{ cl.company_name }}</h6>
+                {{ cl.content|linebreaksbr }}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Interview Questions -->
+    {% if interview_questions %}
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white"><h5 class="mb-0"><i class="fas fa-comments me-2 text-danger"></i>Interview Questions</h5></div>
+        <div class="card-body">
+            {% for q in interview_questions %}
+            <div class="question-card p-3 mb-2 difficulty-{{ q.difficulty }}">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <span class="badge bg-secondary mb-1">{{ q.skill }}</span>
+                        <span class="badge bg-{% if q.difficulty == 'easy' %}success{% elif q.difficulty == 'medium' %}warning{% else %}danger{% endif %}">{{ q.difficulty }}</span>
+                        <p class="mb-0 mt-1">{{ q.question }}</p>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Skill Gaps -->
+    {% if skill_gaps %}
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white"><h5 class="mb-0"><i class="fas fa-chart-bar me-2 text-secondary"></i>Skill Gap Analysis</h5></div>
+        <div class="card-body">
+            {% for gap in skill_gaps %}
+            <h6>Target: {{ gap.target_role }} ({{ gap.match_percentage }}% match)</h6>
+            <div class="mb-3">
+                <strong>Missing Skills:</strong><br>
+                {% for skill in gap.missing_skills %}
+                <span class="skill-tag missing">{{ skill }}</span>
+                {% endfor %}
+            </div>
+            <div class="mb-3">
+                <strong>Recommendations:</strong>
+                <ul>
+                    {% for rec in gap.recommendations %}
+                    <li>
+                        {% if rec.skill %}
+                            <strong>{{ rec.skill }}:</strong>
+                        {% endif %}
+                        {% if rec.recommendation %}
+                            {{ rec.recommendation }}
+                        {% elif rec.learning_plan %}
+                            {{ rec.learning_plan }}
+                        {% elif rec.text %}
+                            {{ rec.text }}
+                        {% else %}
+                            {{ rec }}
+                        {% endif %}
+                        {% if rec.skill_level %}
+                            <span class="badge bg-info ms-1">{{ rec.skill_level }}</span>
+                        {% endif %}
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% if gap.learning_roadmap %}
+            <strong>Learning Roadmap:</strong>
+            {% for phase in gap.learning_roadmap %}
+            <div class="roadmap-phase mt-3">
+                <div class="roadmap-dot">{{ forloop.counter }}</div>
+                <h6>
+                    {% if phase.phase %}{{ phase.phase }}{% elif phase.level %}{{ phase.level|title }}{% else %}Phase {{ forloop.counter }}{% endif %}
+                </h6>
+                {% if phase.skills %}
+                    {% for skill in phase.skills %}
+                    <span class="skill-tag current">{{ skill }}</span>
+                    {% endfor %}
+                {% elif phase.tasks %}
+                    {% for task in phase.tasks %}
+                    <span class="skill-tag current">{{ task }}</span>
+                    {% endfor %}
+                {% elif phase.target %}
+                    <p class="text-muted small mb-0">{{ phase.target }}</p>
+                {% endif %}
+            </div>
+            {% endfor %}
+            {% endif %}
+            <hr>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Improvements -->
+    {% if improvements %}
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white"><h5 class="mb-0"><i class="fas fa-magic me-2 text-warning"></i>Improvement Suggestions</h5></div>
+        <div class="card-body">
+            {% for imp in improvements %}
+            <div class="mb-4 p-3 border rounded">
+                <h6 class="text-primary">{{ imp.section }}</h6>
+                <div class="row">
+                    <div class="col-md-6">
+                        <small class="text-muted d-block mb-1">Current:</small>
+                        <p class="text-danger">{{ imp.original_text|truncatewords:50 }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <small class="text-muted d-block mb-1">Improved:</small>
+                        <p class="text-success">{{ imp.improved_text|truncatewords:50 }}</p>
+                    </div>
+                </div>
+                {% if imp.explanation %}
+                <small class="text-muted"><i class="fas fa-info-circle me-1"></i>{{ imp.explanation }}</small>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

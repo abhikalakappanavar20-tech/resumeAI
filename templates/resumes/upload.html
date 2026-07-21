@@ -1,0 +1,35 @@
+{% extends 'base/base.html' %}
+{% block title %}Upload Resume - ResumeIQ{% endblock %}
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-5">
+                    <h3 class="text-center mb-4"><i class="fas fa-cloud-upload-alt text-primary me-2"></i>Upload Resume</h3>
+                    <form method="post" enctype="multipart/form-data" id="uploadForm">
+                        {% csrf_token %}
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">Resume Title</label>
+                            {{ form.title }}
+                        </div>
+                        <div class="upload-area mb-4" id="dropZone">
+                            <i class="fas fa-cloud-upload-alt d-block"></i>
+                            <h5>Drag & Drop your resume here</h5>
+                            <p class="text-muted">or click to browse</p>
+                            <p class="text-muted small">Supports PDF, DOCX (Max 10MB)</p>
+                            <p class="file-name fw-semibold text-primary mt-2">No file selected</p>
+                            {{ form.file }}
+                        </div>
+                        <div class="text-center">
+                            <button type="submit" class="btn btn-primary btn-lg px-5">
+                                <i class="fas fa-upload me-2"></i>Upload & Analyze
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,40 @@
+{% extends 'base/base.html' %}
+{% block title %}Applications - {{ job.title }} - ResumeIQ{% endblock %}
+{% block content %}
+<div class="container py-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold">{{ job.title }}</h2>
+            <p class="text-muted mb-0">{{ job.applicants_count }} applicants</p>
+        </div>
+        <a href="{% url 'recruiter:rank_candidates' job.pk %}" class="btn btn-primary">
+            <i class="fas fa-robot me-2"></i>AI Rank Candidates
+        </a>
+    </div>
+    <div class="card border-0 shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr><th>Candidate</th><th>Email</th><th>Match Score</th><th>Status</th><th>Applied</th><th>Actions</th></tr>
+                </thead>
+                <tbody>
+                    {% for app in applications %}
+                    <tr>
+                        <td class="fw-semibold">{{ app.candidate.get_full_name|default:app.candidate.username }}</td>
+                        <td>{{ app.candidate.email }}</td>
+                        <td><span class="fw-bold text-primary">{{ app.ai_match_score|floatformat:0 }}%</span></td>
+                        <td><span class="badge bg-{% if app.status == 'pending' %}warning{% elif app.status == 'shortlisted' %}success{% elif app.status == 'rejected' %}danger{% else %}secondary{% endif %}">{{ app.get_status_display }}</span></td>
+                        <td>{{ app.applied_at|timesince }} ago</td>
+                        <td>
+                            <a href="{% url 'recruiter:candidate_profile' app.candidate.pk %}" class="btn btn-sm btn-outline-primary">View</a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="6" class="text-center py-4 text-muted">No applications yet</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

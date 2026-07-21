@@ -1,0 +1,38 @@
+{% extends 'base/base.html' %}
+{% block title %}Manage Jobs - ResumeIQ{% endblock %}
+{% block content %}
+<div class="container py-5">
+    <h2 class="fw-bold mb-4"><i class="fas fa-briefcase me-2 text-primary"></i>Manage Jobs</h2>
+    
+    <div class="d-flex gap-2 mb-4">
+        <a href="?status=" class="btn btn-{% if not status_filter %}primary{% else %}outline-primary{% endif %} btn-sm">All</a>
+        <a href="?status=active" class="btn btn-{% if status_filter == 'active' %}success{% else %}outline-success{% endif %} btn-sm">Active</a>
+        <a href="?status=closed" class="btn btn-{% if status_filter == 'closed' %}danger{% else %}outline-danger{% endif %} btn-sm">Closed</a>
+        <a href="?status=draft" class="btn btn-{% if status_filter == 'draft' %}secondary{% else %}outline-secondary{% endif %} btn-sm">Draft</a>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr><th>Title</th><th>Company</th><th>Recruiter</th><th>Applicants</th><th>Status</th><th>Posted</th></tr>
+                </thead>
+                <tbody>
+                    {% for job in jobs %}
+                    <tr>
+                        <td class="fw-semibold">{{ job.title }}</td>
+                        <td>{{ job.company_name }}</td>
+                        <td>{{ job.recruiter.get_full_name|default:job.recruiter.username }}</td>
+                        <td>{{ job.applicants_count }}</td>
+                        <td><span class="badge bg-{% if job.status == 'active' %}success{% elif job.status == 'closed' %}danger{% else %}secondary{% endif %}">{{ job.get_status_display }}</span></td>
+                        <td>{{ job.created_at|date:"M d, Y" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="6" class="text-center text-muted py-4">No jobs found</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,76 @@
+{% extends 'base/base.html' %}
+{% block title %}{{ candidate.get_full_name }} - ResumeIQ{% endblock %}
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center mb-4">
+                        <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width:80px;height:80px;font-size:1.5rem;">
+                            {{ candidate.first_name.0 }}{{ candidate.last_name.0 }}
+                        </div>
+                        <div>
+                            <h3 class="mb-0">{{ candidate.get_full_name }}</h3>
+                            <p class="text-muted mb-0">{{ profile.headline|default:"" }}</p>
+                            <small class="text-muted"><i class="fas fa-envelope me-1"></i>{{ candidate.email }} &bull; {{ profile.location|default:"" }}</small>
+                        </div>
+                    </div>
+                    {% if profile.summary %}
+                    <h6>Summary</h6>
+                    <p>{{ profile.summary }}</p>
+                    {% endif %}
+                    {% if profile.skills %}
+                    <h6>Skills</h6>
+                    {% for skill in profile.skills %}
+                    <span class="skill-tag current">{{ skill }}</span>
+                    {% endfor %}
+                    {% endif %}
+                </div>
+            </div>
+            
+            {% if resumes %}
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white"><h5 class="mb-0">Resumes</h5></div>
+                <div class="card-body">
+                    {% for resume in resumes %}
+                    <div class="d-flex justify-content-between align-items-center p-2 border-bottom">
+                        <span>{{ resume.title }} <span class="badge bg-secondary">{{ resume.file_type|upper }}</span></span>
+                        <small class="text-muted">{{ resume.created_at|date:"M d, Y" }}</small>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body text-center p-4">
+                    {% if is_shortlisted %}
+                    <a href="{% url 'recruiter:shortlist_candidate' candidate.pk %}" class="btn btn-warning w-100 mb-2">
+                        <i class="fas fa-star me-2"></i>Remove from Shortlist
+                    </a>
+                    {% else %}
+                    <a href="{% url 'recruiter:shortlist_candidate' candidate.pk %}" class="btn btn-success w-100 mb-2">
+                        <i class="fas fa-star me-2"></i>Add to Shortlist
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <h6>Details</h6>
+                    <p><strong>Experience:</strong> {{ profile.total_experience_years }} years</p>
+                    <p><strong>Notice Period:</strong> {{ profile.notice_period_days }} days</p>
+                    {% if profile.linkedin_url %}
+                    <p><a href="{{ profile.linkedin_url }}" target="_blank"><i class="fab fa-linkedin me-1"></i>LinkedIn</a></p>
+                    {% endif %}
+                    {% if profile.github_url %}
+                    <p><a href="{{ profile.github_url }}" target="_blank"><i class="fab fa-github me-1"></i>GitHub</a></p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

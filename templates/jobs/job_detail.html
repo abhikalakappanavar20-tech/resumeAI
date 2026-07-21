@@ -1,0 +1,89 @@
+{% extends 'base/base.html' %}
+{% block title %}{{ job.title }} - ResumeIQ{% endblock %}
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body p-4">
+                    <h2 class="fw-bold">{{ job.title }}</h2>
+                    <p class="text-muted mb-3">
+                        <i class="fas fa-building me-1"></i>{{ job.company_name }} &bull;
+                        <i class="fas fa-map-marker-alt me-1"></i>{{ job.location }}
+                    </p>
+                    <div class="mb-3">
+                        <span class="badge bg-primary me-1">{{ job.get_job_type_display }}</span>
+                        <span class="badge bg-secondary me-1">{{ job.get_experience_required_display }}</span>
+                        {% if job.salary_min and job.salary_max %}
+                        <span class="badge bg-success">{{ job.salary_min|floatformat:0 }}k - {{ job.salary_max|floatformat:0 }}k / year</span>
+                        {% endif %}
+                    </div>
+                    
+                    <h5 class="mt-4">Description</h5>
+                    <p>{{ job.description }}</p>
+                    
+                    {% if job.requirements %}
+                    <h5>Requirements</h5>
+                    <p>{{ job.requirements|linebreaks }}</p>
+                    {% endif %}
+                    
+                    {% if job.responsibilities %}
+                    <h5>Responsibilities</h5>
+                    <p>{{ job.responsibilities|linebreaks }}</p>
+                    {% endif %}
+                    
+                    {% if job.benefits %}
+                    <h5>Benefits</h5>
+                    <p>{{ job.benefits|linebreaks }}</p>
+                    {% endif %}
+                    
+                    {% if job.required_skills %}
+                    <h5>Required Skills</h5>
+                    {% for skill in job.required_skills %}
+                    <span class="skill-tag current">{{ skill }}</span>
+                    {% endfor %}
+                    {% endif %}
+                    
+                    {% if job.preferred_skills %}
+                    <h5 class="mt-3">Preferred Skills</h5>
+                    {% for skill in job.preferred_skills %}
+                    <span class="skill-tag matched">{{ skill }}</span>
+                    {% endfor %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body text-center p-4">
+                    {% if has_applied %}
+                    <span class="badge bg-success mb-3 p-2"><i class="fas fa-check me-1"></i>Applied</span>
+                    {% else %}
+                    <a href="{% url 'jobs:apply' job.pk %}" class="btn btn-primary w-100 mb-3 py-2">
+                        <i class="fas fa-paper-plane me-2"></i>Apply Now
+                    </a>
+                    {% endif %}
+                    <small class="text-muted"><i class="fas fa-eye me-1"></i>{{ job.views_count }} views &bull; {{ job.applicants_count }} applicants</small>
+                    {% if job.deadline %}
+                    <p class="mt-2 text-danger small"><i class="fas fa-clock me-1"></i>Deadline: {{ job.deadline }}</p>
+                    {% endif %}
+                </div>
+            </div>
+            
+            {% if similar_jobs %}
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white"><h6 class="mb-0">Similar Jobs</h6></div>
+                <div class="card-body">
+                    {% for sj in similar_jobs %}
+                    <div class="mb-3">
+                        <a href="{% url 'jobs:job_detail' sj.pk %}" class="text-decoration-none fw-semibold">{{ sj.title }}</a>
+                        <p class="text-muted small mb-0">{{ sj.company_name }}</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
