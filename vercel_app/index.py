@@ -11,6 +11,14 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'resumeiq.settings')
 import django
 django.setup()
 
+# Collect static files on cold start
+try:
+    from django.core.management import call_command
+    call_command('collectstatic', '--noinput', verbosity=0)
+except Exception:
+    pass
+
+# Run migrations on cold start
 try:
     from django.core.management import call_command
     call_command('migrate', '--run-syncdb', verbosity=0)
