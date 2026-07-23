@@ -110,15 +110,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // ===== AI BUTTON SPINNER =====
     document.querySelectorAll('.btn-ai-action').forEach(function(btn) {
-        btn.addEventListener('click', function() {
+        btn.addEventListener('click', function(e) {
+            var form = this.closest('form');
+            if (form && !form.checkValidity()) return;
             this.disabled = true;
             this._originalHTML = this._originalHTML || this.innerHTML;
-            this.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Processing...';
+            this.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>AI is working...';
             var self = this;
             setTimeout(function() {
                 self.disabled = false;
                 self.innerHTML = self._originalHTML;
-            }, 15000);
+            }, 60000);
         });
     });
 

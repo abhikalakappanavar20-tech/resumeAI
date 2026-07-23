@@ -95,9 +95,11 @@ def generate_cover_letter_view(request, pk):
                 'skills': extracted_data.skills,
                 'experience': extracted_data.experience,
                 'summary': extracted_data.summary,
+                'education': extracted_data.education,
+                'name': extracted_data.name,
             }
         except ExtractedResumeData.DoesNotExist:
-            data = {'skills': [], 'experience': [], 'summary': ''}
+            data = {'skills': [], 'experience': [], 'summary': '', 'education': [], 'name': ''}
         
         content = generate_cover_letter(data, company, role, job_description)
         
@@ -118,13 +120,16 @@ def generate_cover_letter_view(request, pk):
 def generate_interview_questions_view(request, pk):
     """Generate AI interview questions for a resume."""
     resume = get_object_or_404(Resume, pk=pk, user=request.user)
-    
+
+    if request.method != 'POST':
+        return redirect('resumes:resume_detail', pk=pk)
+
     try:
         extracted_data = resume.extracted_data
         data = {'skills': extracted_data.skills}
     except ExtractedResumeData.DoesNotExist:
         data = {'skills': []}
-    
+
     try:
         questions = generate_interview_questions(data)
         for q in questions:
@@ -138,7 +143,7 @@ def generate_interview_questions_view(request, pk):
         messages.success(request, f'Generated {len(questions)} interview questions!')
     except Exception as e:
         messages.error(request, f'Error generating questions: {str(e)}')
-    
+
     return redirect('resumes:resume_detail', pk=pk)
 
 
@@ -146,7 +151,10 @@ def generate_interview_questions_view(request, pk):
 def generate_improvements_view(request, pk):
     """Generate AI resume improvement suggestions."""
     resume = get_object_or_404(Resume, pk=pk, user=request.user)
-    
+
+    if request.method != 'POST':
+        return redirect('resumes:resume_detail', pk=pk)
+
     try:
         extracted_data = resume.extracted_data
         data = {
@@ -184,55 +192,61 @@ def generate_improvements_view(request, pk):
 def skill_gap_analysis_view(request, pk):
     """Generate AI skill gap analysis."""
     resume = get_object_or_404(Resume, pk=pk, user=request.user)
-    
-    if request.method == 'POST':
-        target_role = request.POST.get('target_role', '')
-        
-        try:
-            extracted_data = resume.extracted_data
-            data = {
-                'skills': extracted_data.skills,
-                'experience': extracted_data.experience,
-            }
-            result = analyze_skill_gap(data, target_role)
-            
-            raw_missing = result.get('missing_skills', [])
-            missing_skills = []
-            for s in raw_missing:
-                if isinstance(s, dict):
-                    if 'skill' in s:
-                        missing_skills.append(s['skill'])
-                    elif 'skills_needed' in s:
-                        missing_skills.extend(s['skills_needed'] if isinstance(s['skills_needed'], list) else [s['skills_needed']])
-                    elif 'name' in s:
-                        missing_skills.append(s['name'])
-                elif isinstance(s, str):
-                    missing_skills.append(s)
-            
-            raw_recs = result.get('recommendations', [])
-            recommendations = []
-            for r_item in raw_recs:
-                if isinstance(r_item, dict):
-                    recommendations.append(r_item.get('recommendation', r_item.get('text', str(r_item))))
-                elif isinstance(r_item, str):
-                    recommendations.append(r_item)
-            
-            skill_gap = SkillGap.objects.create(
-                resume=resume,
-                target_role=target_role,
-                current_skills=extracted_data.skills,
-                missing_skills=missing_skills,
-                recommendations=recommendations,
-                learning_roadmap=result.get('learning_roadmap', []),
-                match_percentage=round(
-                    (len(extracted_data.skills) / max(len(missing_skills) + len(extracted_data.skills), 1)) * 100,
-                    1
-                ),
-            )
-            messages.success(request, 'Skill gap analysis complete!')
-        except Exception as e:
-            messages.error(request, f'Error: {str(e)}')
-    
+
+    if request.method != 'POST':
+        return redirect('resumes:resume_detail', pk=pk)
+
+    target_role = request.POST.get('target_role', '')
+
+    if not target_role:
+        messages.error(request, 'Please enter a target role.')
+        return redirect('resumes:resume_detail', pk=pk)
+
+    try:
+        extracted_data = resume.extracted_data
+        data = {
+            'skills': extracted_data.skills,
+            'experience': extracted_data.experience,
+        }
+        result = analyze_skill_gap(data, target_role)
+
+        raw_missing = result.get('missing_skills', [])
+        missing_skills = []
+        for s in raw_missing:
+            if isinstance(s, dict):
+                if 'skill' in s:
+                    missing_skills.append(s['skill'])
+                elif 'skills_needed' in s:
+                    missing_skills.extend(s['skills_needed'] if isinstance(s['skills_needed'], list) else [s['skills_needed']])
+                elif 'name' in s:
+                    missing_skills.append(s['name'])
+            elif isinstance(s, str):
+                missing_skills.append(s)
+
+        raw_recs = result.get('recommendations', [])
+        recommendations = []
+        for r_item in raw_recs:
+            if isinstance(r_item, dict):
+                recommendations.append(r_item.get('recommendation', r_item.get('text', str(r_item))))
+            elif isinstance(r_item, str):
+                recommendations.append(r_item)
+
+        SkillGap.objects.create(
+            resume=resume,
+            target_role=target_role,
+            current_skills=extracted_data.skills,
+            missing_skills=missing_skills,
+            recommendations=recommendations,
+            learning_roadmap=result.get('learning_roadmap', []),
+            match_percentage=round(
+                (len(extracted_data.skills) / max(len(missing_skills) + len(extracted_data.skills), 1)) * 100,
+                1
+            ),
+        )
+        messages.success(request, 'Skill gap analysis complete!')
+    except Exception as e:
+        messages.error(request, f'Error: {str(e)}')
+
     return redirect('resumes:resume_detail', pk=pk)
 
 
