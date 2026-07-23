@@ -8,6 +8,8 @@ SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-resumeiq-dev-k
 
 DEBUG = os.environ.get('DJANGO_DEBUG', 'True') == 'True'
 
+IS_VERCEL = os.environ.get('VERCEL', '') == '1'
+
 ALLOWED_HOSTS = ['*']
 
 INSTALLED_APPS = [
@@ -62,12 +64,30 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'resumeiq.wsgi.application'
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.environ.get('DB_NAME', str(BASE_DIR / 'db.sqlite3')),
+DATABASE_URL = os.environ.get('DATABASE_URL', '')
+if DATABASE_URL:
+    import dj_database_url
+    DATABASES = {
+        'default': dj_database_url.config(
+            default=DATABASE_URL,
+            conn_max_age=600,
+            conn_health_checks=True,
+        )
     }
-}
+elif IS_VERCEL:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': '/tmp/db.sqlite3',
+        }
+    }
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': os.environ.get('DB_NAME', str(BASE_DIR / 'db.sqlite3')),
+        }
+    }
 
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
@@ -83,9 +103,9 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
-STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATIC_ROOT = BASE_DIR / 'staticfiles' if not IS_VERCEL else '/tmp/staticfiles'
 MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+MEDIA_ROOT = BASE_DIR / 'media' if not IS_VERCEL else '/tmp/media'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
