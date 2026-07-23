@@ -6,24 +6,12 @@ from django.conf import settings
 
 
 OPENAI_API_KEY = getattr(settings, 'OPENAI_API_KEY', os.environ.get('OPENAI_API_KEY', ''))
-
-
-def get_ollama_config():
-    base_url = getattr(settings, 'OLLAMA_BASE_URL', 'http://localhost:11434')
-    model = getattr(settings, 'OLLAMA_MODEL', 'qwen2.5:1.5b')
-    return base_url, model
-
-
-def is_ollama_available():
-    base_url, _ = get_ollama_config()
-    try:
-        r = requests.get(f"{base_url}/api/tags", timeout=5)
-        return r.status_code == 200
-    except Exception:
-        return False
+IS_VERCEL = os.environ.get('VERCEL', '') == '1'
 
 
 def _call_openai(prompt, system_prompt, max_tokens=1500, temperature=0.7):
+    if not OPENAI_API_KEY:
+        return None
     try:
         from openai import OpenAI
         client = OpenAI(api_key=OPENAI_API_KEY)
@@ -44,9 +32,16 @@ def _call_openai(prompt, system_prompt, max_tokens=1500, temperature=0.7):
 
 
 def _call_ollama(prompt, system_prompt, max_tokens=1500, temperature=0.7):
-    if not is_ollama_available():
+    if IS_VERCEL:
         return None
-    base_url, model = get_ollama_config()
+    base_url = getattr(settings, 'OLLAMA_BASE_URL', 'http://localhost:11434')
+    model = getattr(settings, 'OLLAMA_MODEL', 'qwen2.5:1.5b')
+    try:
+        r = requests.get(f"{base_url}/api/tags", timeout=3)
+        if r.status_code != 200:
+            return None
+    except Exception:
+        return None
     try:
         payload = {
             "model": model,
@@ -58,7 +53,7 @@ def _call_ollama(prompt, system_prompt, max_tokens=1500, temperature=0.7):
             },
             "system": system_prompt,
         }
-        r = requests.post(f"{base_url}/api/generate", json=payload, timeout=180)
+        r = requests.post(f"{base_url}/api/generate", json=payload, timeout=30)
         if r.status_code == 200:
             response = r.json().get("response", "")
             return _strip_markdown(response.strip()) if response.strip() else None
@@ -76,10 +71,9 @@ def generate_with_ai(prompt, max_tokens=1500, temperature=0.7):
         "Personalize all responses based on the candidate's actual resume data."
     )
 
-    if OPENAI_API_KEY:
-        result = _call_openai(prompt, system_prompt, max_tokens, temperature)
-        if result:
-            return result
+    result = _call_openai(prompt, system_prompt, max_tokens, temperature)
+    if result:
+        return result
 
     result = _call_ollama(prompt, system_prompt, max_tokens, temperature)
     if result:
