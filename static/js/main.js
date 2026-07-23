@@ -113,14 +113,16 @@ document.addEventListener('DOMContentLoaded', function() {
         btn.addEventListener('click', function(e) {
             var form = this.closest('form');
             if (form && !form.checkValidity()) return;
-            this.disabled = true;
-            this._originalHTML = this._originalHTML || this.innerHTML;
-            this.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>AI is working...';
             var self = this;
+            self._originalHTML = self._originalHTML || self.innerHTML;
             setTimeout(function() {
-                self.disabled = false;
-                self.innerHTML = self._originalHTML;
-            }, 60000);
+                self.disabled = true;
+                self.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>AI is working...';
+                setTimeout(function() {
+                    self.disabled = false;
+                    self.innerHTML = self._originalHTML;
+                }, 60000);
+            }, 100);
         });
     });
 
