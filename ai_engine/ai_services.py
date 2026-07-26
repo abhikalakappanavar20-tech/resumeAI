@@ -330,7 +330,12 @@ def rank_candidates(candidates_data, job):
 
 
 def generate_cover_letter_fallback(prompt):
-    return """Dear Hiring Manager,
+    name = "Candidate"
+    import re
+    match = re.search(r"Name:\s*(.+?)(?:\n|$)", prompt)
+    if match:
+        name = match.group(1).strip()
+    return f"""Dear Hiring Manager,
 
 I am writing to express my strong interest in the position at your esteemed organization. With my background in software development and passion for creating impactful solutions, I believe I would be a valuable addition to your team.
 
@@ -339,7 +344,7 @@ Throughout my career, I have developed expertise in building scalable applicatio
 I am excited about the opportunity to contribute to your organization's success and would welcome the chance to discuss how my skills and experience align with your needs. Thank you for considering my application.
 
 Sincerely,
-[Your Name]"""
+{name}"""
 
 
 def generate_interview_questions_fallback(prompt):

@@ -53,8 +53,10 @@ def login_view(request):
             if user is not None:
                 login(request, user)
                 messages.success(request, f'Welcome back, {user.first_name}!')
-                next_url = request.GET.get('next', 'home')
-                return redirect(next_url)
+                next_url = request.GET.get('next', '')
+                if next_url and next_url.startswith('/') and not next_url.startswith('//'):
+                    return redirect(next_url)
+                return redirect('home')
             else:
                 messages.error(request, 'Invalid username or password.')
     else:
@@ -72,36 +74,44 @@ def logout_view(request):
 @login_required
 def profile_view(request):
     user = request.user
+    user_form = UserUpdateForm(instance=user)
+    profile_form = None
+    profile = None
+
     if request.method == 'POST':
         user_form = UserUpdateForm(request.POST, request.FILES, instance=user)
-        if user_form.is_valid():
+        user_valid = user_form.is_valid()
+        profile_valid = True
+
+        if user.role == 'candidate':
+            profile, _ = CandidateProfile.objects.get_or_create(user=user)
+            profile_form = CandidateProfileForm(request.POST, instance=profile)
+            profile_valid = profile_form.is_valid()
+        elif user.role == 'recruiter':
+            profile, _ = RecruiterProfile.objects.get_or_create(user=user)
+            profile_form = RecruiterProfileForm(request.POST, request.FILES, instance=profile)
+            profile_valid = profile_form.is_valid()
+
+        if user_valid and profile_valid:
             user_form.save()
+            if profile_form:
+                profile_form.save()
             messages.success(request, 'Profile updated successfully!')
             return redirect('accounts:profile')
+        else:
+            messages.error(request, 'Please correct the errors below.')
     else:
-        user_form = UserUpdateForm(instance=user)
+        if user.role == 'candidate':
+            profile, _ = CandidateProfile.objects.get_or_create(user=user)
+            profile_form = CandidateProfileForm(instance=profile)
+        elif user.role == 'recruiter':
+            profile, _ = RecruiterProfile.objects.get_or_create(user=user)
+            profile_form = RecruiterProfileForm(instance=profile)
 
     context = {'user_form': user_form, 'user': user}
-
-    if user.role == 'candidate':
-        profile, created = CandidateProfile.objects.get_or_create(user=user)
-        if request.method == 'POST':
-            profile_form = CandidateProfileForm(request.POST, instance=profile)
-            if profile_form.is_valid():
-                profile_form.save()
-        else:
-            profile_form = CandidateProfileForm(instance=profile)
+    if profile_form:
         context['profile_form'] = profile_form
-        context['profile'] = profile
-    elif user.role == 'recruiter':
-        profile, created = RecruiterProfile.objects.get_or_create(user=user)
-        if request.method == 'POST':
-            profile_form = RecruiterProfileForm(request.POST, request.FILES, instance=profile)
-            if profile_form.is_valid():
-                profile_form.save()
-        else:
-            profile_form = RecruiterProfileForm(instance=profile)
-        context['profile_form'] = profile_form
+    if profile:
         context['profile'] = profile
 
     return render(request, 'accounts/profile.html', context)

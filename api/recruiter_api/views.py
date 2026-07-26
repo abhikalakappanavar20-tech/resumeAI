@@ -6,9 +6,14 @@ from accounts.models import CandidateProfile
 from .serializers import CandidateShortlistSerializer
 
 
+class IsRecruiter(permissions.BasePermission):
+    def has_permission(self, request, view):
+        return request.user.is_authenticated and request.user.role == 'recruiter'
+
+
 class ShortlistView(generics.ListCreateAPIView):
     serializer_class = CandidateShortlistSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsRecruiter]
 
     def get_queryset(self):
         return CandidateShortlist.objects.filter(recruiter=self.request.user)
@@ -18,7 +23,7 @@ class ShortlistView(generics.ListCreateAPIView):
 
 
 class SearchCandidatesView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsRecruiter]
 
     def get(self, request):
         skill = request.query_params.get('skill', '')
@@ -31,8 +36,11 @@ class SearchCandidatesView(APIView):
         if location:
             queryset = queryset.filter(location__icontains=location)
         if experience:
-            queryset = queryset.filter(total_experience_years__gte=int(experience))
+            try:
+                queryset = queryset.filter(total_experience_years__gte=int(experience))
+            except (ValueError, TypeError):
+                pass
         
-        from accounts.serializers import CandidateProfileSerializer
+        from api.accounts_api.serializers import CandidateProfileSerializer
         serializer = CandidateProfileSerializer(queryset[:20], many=True)
         return Response(serializer.data)

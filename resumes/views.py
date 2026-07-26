@@ -9,7 +9,7 @@ from .forms import ResumeUploadForm
 
 @login_required
 def dashboard(request):
-    resumes = Resume.objects.filter(user=request.user)
+    resumes = Resume.objects.filter(user=request.user).prefetch_related('ats_score')
     total_resumes = resumes.count()
     analyzed_count = resumes.filter(status='analyzed').count()
     avg_score = 0
@@ -44,7 +44,7 @@ def upload_resume(request):
 
 @login_required
 def resume_detail(request, pk):
-    resume = get_object_or_404(Resume, pk=pk, user=request.user)
+    resume = get_object_or_404(Resume.objects.prefetch_related('ats_score', 'extracted_data', 'cover_letters', 'interview_questions', 'skill_gaps', 'improvements'), pk=pk, user=request.user)
     extracted_data = None
     ats_score = None
     cover_letters = CoverLetter.objects.filter(resume=resume)
@@ -87,5 +87,5 @@ def delete_resume(request, pk):
 
 @login_required
 def resume_history(request):
-    resumes = Resume.objects.filter(user=request.user)
+    resumes = Resume.objects.filter(user=request.user).prefetch_related('ats_score')
     return render(request, 'resumes/history.html', {'resumes': resumes})

@@ -27,16 +27,26 @@ class JobListCreateView(generics.ListCreateAPIView):
 
 class JobDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = JobSerializer
-    queryset = Job.objects.all()
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        if self.request.method in ('PUT', 'PATCH', 'DELETE'):
+            return Job.objects.filter(recruiter=self.request.user)
+        return Job.objects.filter(status='active')
+
+    def perform_update(self, serializer):
+        serializer.save(recruiter=self.request.user)
 
 
 class ApplyJobView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, pk):
+        if request.user.role != 'candidate':
+            return Response({"error": "Only candidates can apply for jobs"}, status=status.HTTP_403_FORBIDDEN)
+
         try:
-            job = Job.objects.get(pk=pk)
+            job = Job.objects.get(pk=pk, status='active')
         except Job.DoesNotExist:
             return Response({"error": "Job not found"}, status=status.HTTP_404_NOT_FOUND)
         

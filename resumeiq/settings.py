@@ -10,7 +10,12 @@ DEBUG = os.environ.get('DJANGO_DEBUG', 'True') == 'True'
 
 IS_VERCEL = os.environ.get('VERCEL', '') == '1'
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ['*'] if DEBUG else [
+    'resume-ai-1m88.vercel.app',
+    'resumeai.vercel.app',
+    'localhost',
+    '127.0.0.1',
+]
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -145,3 +150,13 @@ OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY', '')
 # Vercel payload size limits
 DATA_UPLOAD_MAX_MEMORY_SIZE = 4 * 1024 * 1024  # 4MB
 FILE_UPLOAD_MAX_MEMORY_SIZE = 4 * 1024 * 1024  # 4MB
+
+# Fix Django message tags (Bootstrap uses 'danger' not 'error')
+from django.contrib.messages import constants as message_constants
+MESSAGE_TAGS = {
+    message_constants.DEBUG: 'secondary',
+    message_constants.INFO: 'info',
+    message_constants.SUCCESS: 'success',
+    message_constants.WARNING: 'warning',
+    message_constants.ERROR: 'danger',
+}

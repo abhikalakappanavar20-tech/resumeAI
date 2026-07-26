@@ -83,11 +83,17 @@ def manage_users(request):
             messages.error(request, 'Invalid user.')
             return redirect('analytics:manage_users')
         if action == 'toggle_active':
+            if target_user.pk == request.user.pk:
+                messages.error(request, 'You cannot deactivate your own account.')
+                return redirect('analytics:manage_users')
             target_user.is_active = not target_user.is_active
             target_user.save()
             messages.success(request, f'User {target_user.username} {"activated" if target_user.is_active else "deactivated"}.')
         elif action == 'change_role':
             new_role = request.POST.get('new_role')
+            if new_role not in ('candidate', 'recruiter', 'admin'):
+                messages.error(request, 'Invalid role.')
+                return redirect('analytics:manage_users')
             target_user.role = new_role
             target_user.save()
             messages.success(request, f'User {target_user.username} role changed to {new_role}.')

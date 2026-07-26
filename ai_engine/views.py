@@ -14,6 +14,9 @@ from .ai_services import (generate_cover_letter, generate_interview_questions,
 @login_required
 def analyze_resume(request, pk):
     """Analyze a resume: parse, extract data, calculate ATS score."""
+    if request.method != 'POST':
+        return redirect('resumes:resume_detail', pk=pk)
+
     resume = get_object_or_404(Resume, pk=pk, user=request.user)
     resume.status = 'parsing'
     resume.save(update_fields=['status'])

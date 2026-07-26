@@ -58,9 +58,13 @@
                 <div class="card-body text-center p-4">
                     {% if has_applied %}
                     <span class="badge bg-success mb-3 p-2"><i class="fas fa-check me-1"></i>Applied</span>
-                    {% else %}
+                    {% elif user.is_authenticated %}
                     <a href="{% url 'jobs:apply' job.pk %}" class="btn btn-primary w-100 mb-3 py-2">
                         <i class="fas fa-paper-plane me-2"></i>Apply Now
+                    </a>
+                    {% else %}
+                    <a href="{% url 'accounts:login' %}?next={{ request.path }}" class="btn btn-primary w-100 mb-3 py-2">
+                        <i class="fas fa-sign-in-alt me-2"></i>Login to Apply
                     </a>
                     {% endif %}
                     <small class="text-muted"><i class="fas fa-eye me-1"></i>{{ job.views_count }} views &bull; {{ job.applicants_count }} applicants</small>

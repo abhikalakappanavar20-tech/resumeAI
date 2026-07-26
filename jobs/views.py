@@ -6,7 +6,6 @@ from .models import Job, Application, JobRecommendation
 from .forms import JobForm, ApplicationForm
 
 
-@login_required
 def job_list(request):
     jobs = Job.objects.filter(status='active')
     query = request.GET.get('q', '')
@@ -38,7 +37,9 @@ def job_detail(request, pk):
     job = get_object_or_404(Job, pk=pk)
     job.views_count += 1
     job.save(update_fields=['views_count'])
-    has_applied = Application.objects.filter(job=job, candidate=request.user).exists()
+    has_applied = False
+    if request.user.is_authenticated:
+        has_applied = Application.objects.filter(job=job, candidate=request.user).exists()
     similar_jobs = Job.objects.filter(status='active').exclude(pk=pk)[:5]
     # Filter similar by matching skills or same company
     if job.required_skills:
@@ -65,7 +66,10 @@ def create_job(request):
         if form.is_valid():
             job = form.save(commit=False)
             job.recruiter = request.user
-            job.company_name = request.user.recruiter_profile.company_name
+            try:
+                job.company_name = request.user.recruiter_profile.company_name
+            except Exception:
+                job.company_name = ''
             job.save()
             messages.success(request, 'Job posted successfully!')
             return redirect('jobs:job_detail', pk=job.pk)

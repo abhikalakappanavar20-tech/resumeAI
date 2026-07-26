@@ -30,14 +30,26 @@ class JobForm(forms.ModelForm):
             'deadline': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
         }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance and self.instance.pk:
+            if self.instance.required_skills:
+                self.fields['required_skills_text'].initial = ', '.join(self.instance.required_skills)
+            if self.instance.preferred_skills:
+                self.fields['preferred_skills_text'].initial = ', '.join(self.instance.preferred_skills)
+
     def save(self, commit=True):
         job = super().save(commit=commit)
         req_skills = self.cleaned_data.get('required_skills_text', '')
         pref_skills = self.cleaned_data.get('preferred_skills_text', '')
         if req_skills:
             job.required_skills = [s.strip() for s in req_skills.split(',') if s.strip()]
+        else:
+            job.required_skills = []
         if pref_skills:
             job.preferred_skills = [s.strip() for s in pref_skills.split(',') if s.strip()]
+        else:
+            job.preferred_skills = []
         if commit:
             job.save()
         return job

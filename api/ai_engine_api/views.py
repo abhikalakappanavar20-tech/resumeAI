@@ -154,13 +154,34 @@ class SkillGapAnalysisView(APIView):
             data = {'skills': [], 'experience': []}
         
         result = analyze_skill_gap(data, serializer.validated_data['target_role'])
-        
+
+        raw_missing = result.get('missing_skills', [])
+        missing_skills = []
+        for s in raw_missing:
+            if isinstance(s, dict):
+                if 'skill' in s:
+                    missing_skills.append(s['skill'])
+                elif 'skills_needed' in s:
+                    missing_skills.extend(s['skills_needed'] if isinstance(s['skills_needed'], list) else [s['skills_needed']])
+                elif 'name' in s:
+                    missing_skills.append(s['name'])
+            elif isinstance(s, str):
+                missing_skills.append(s)
+
+        raw_recs = result.get('recommendations', [])
+        recommendations = []
+        for r_item in raw_recs:
+            if isinstance(r_item, dict):
+                recommendations.append(r_item.get('recommendation', r_item.get('text', str(r_item))))
+            elif isinstance(r_item, str):
+                recommendations.append(r_item)
+
         skill_gap = SkillGap.objects.create(
             resume=resume,
             target_role=serializer.validated_data['target_role'],
             current_skills=data.get('skills', []),
-            missing_skills=[s['skill'] for s in result.get('missing_skills', [])],
-            recommendations=result.get('recommendations', []),
+            missing_skills=missing_skills,
+            recommendations=recommendations,
             learning_roadmap=result.get('learning_roadmap', []),
         )
         
