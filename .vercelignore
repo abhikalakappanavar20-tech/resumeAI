@@ -1,5 +1,6 @@
 # Database
 db.sqlite3
+*.sqlite3
 
 # Media uploads
 media/
@@ -23,6 +24,7 @@ docker-compose.override.yml
 
 # Documentation
 *.md
+LICENSE
 
 # IDE
 .vscode/
@@ -34,5 +36,17 @@ docker-compose.override.yml
 .DS_Store
 Thumbs.db
 
-# Unused on Vercel
+# Python artifacts
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+
+# Unused heavy files
+requirements.txt
 gunicorn
+docker-compose.yml
+Dockerfile
+build.sh
