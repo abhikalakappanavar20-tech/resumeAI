@@ -3,8 +3,8 @@ set -e
 
 echo "Building ResumeIQ for Vercel..."
 
-# Install Python dependencies
-pip install -r requirements.txt --quiet
+# Install lean Python dependencies
+pip install -r requirements-vercel.txt --quiet
 
 # Run collectstatic
 python -c "

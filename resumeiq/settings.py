@@ -141,3 +141,7 @@ OLLAMA_BASE_URL = os.environ.get('OLLAMA_BASE_URL', 'http://localhost:11434')
 OLLAMA_MODEL = os.environ.get('OLLAMA_MODEL', 'qwen2.5:0.5b')
 
 OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY', '')
+
+# Vercel payload size limits
+DATA_UPLOAD_MAX_MEMORY_SIZE = 4 * 1024 * 1024  # 4MB
+FILE_UPLOAD_MAX_MEMORY_SIZE = 4 * 1024 * 1024  # 4MB

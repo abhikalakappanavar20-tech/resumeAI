@@ -21,6 +21,7 @@ class ResumeUploadForm(forms.ModelForm):
             ext = file.name.split('.')[-1].lower()
             if ext not in ['pdf', 'docx', 'doc']:
                 raise forms.ValidationError('Only PDF and DOCX files are allowed.')
-            if file.size > 10 * 1024 * 1024:
-                raise forms.ValidationError('File size must be under 10MB.')
+            max_size = 4 * 1024 * 1024  # 4MB limit for Vercel compatibility
+            if file.size > max_size:
+                raise forms.ValidationError('File size must be under 4MB.')
         return file

@@ -1,0 +1,38 @@
+# Database
+db.sqlite3
+
+# Media uploads
+media/
+
+# Collected static files
+staticfiles/
+
+# Docker
+Dockerfile
+docker-compose.yml
+docker-compose.override.yml
+
+# Environment
+.env
+.env.local
+.env.example
+
+# Git
+.git/
+.gitignore
+
+# Documentation
+*.md
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Unused on Vercel
+gunicorn
