@@ -7,8 +7,7 @@
             "src": "vercel_app/index.py",
             "use": "@vercel/python",
             "config": {
-                "maxDuration": 30,
-                "maxBodySize": 10485760
+                "maxDuration": 30
             }
         }
     ],
