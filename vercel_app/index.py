@@ -11,11 +11,24 @@ import django
 django.setup()
 
 from django.core.management import call_command
+from django.db import connection
 
-try:
-    call_command('migrate', interactive=False, verbosity=0)
-except Exception as e:
-    print(f"[Startup] Migrate error: {e}")
+def run_migrations():
+    try:
+        call_command('migrate', interactive=False, verbosity=0)
+        return
+    except Exception as e:
+        msg = str(e)
+        if 'applied before its dependency' in msg:
+            try:
+                call_command('migrate', 'accounts', '--fake', verbosity=0)
+                call_command('migrate', interactive=False, verbosity=0)
+                return
+            except Exception:
+                pass
+        print(f"[Startup] Migrate error: {e}")
+
+run_migrations()
 
 from django.core.wsgi import get_wsgi_application
 app = get_wsgi_application()
