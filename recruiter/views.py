@@ -3,9 +3,10 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db.models import Q
 from accounts.models import User, CandidateProfile
-from resumes.models import Resume, ATSScore
+from resumes.models import Resume, ATSScore, ExtractedResumeData
 from jobs.models import Job, Application
 from .models import CandidateShortlist, CandidateSearch
+from ai_engine.ai_services import rank_candidates as ai_rank_candidates, is_ai_available
 
 
 @login_required
@@ -134,28 +135,64 @@ def my_shortlist(request):
 def rank_candidates(request, job_pk):
     if request.user.role != 'recruiter':
         return redirect('home')
-    
+
     job = get_object_or_404(Job, pk=job_pk, recruiter=request.user)
     applications = Application.objects.filter(job=job).select_related('candidate')
-    
-    ranked = []
+
+    candidates_data = []
     for app in applications:
         resume = app.resume
-        ats_score = None
+        ats_score = 0
+        skills = []
+        summary = ''
         if resume:
             try:
-                ats_score = resume.ats_score
+                ats_obj = resume.ats_score
+                ats_score = ats_obj.overall_score if ats_obj else 0
             except ATSScore.DoesNotExist:
                 pass
-        
-        ranked.append({
+            try:
+                extracted = resume.extracted_data
+                skills = extracted.skills
+                summary = extracted.summary
+            except ExtractedResumeData.DoesNotExist:
+                pass
+
+        candidates_data.append({
+            'user': app.candidate,
             'application': app,
-            'candidate': app.candidate,
-            'ats_score': ats_score.overall_score if ats_score else 0,
-            'match_score': app.ai_match_score,
+            'ats_score': ats_score,
+            'skills': skills,
+            'summary': summary,
         })
-    
-    ranked.sort(key=lambda x: x['match_score'], reverse=True)
-    
-    context = {'job': job, 'ranked_candidates': ranked}
+
+    if is_ai_available() and candidates_data:
+        ai_ranked = ai_rank_candidates(candidates_data, job)
+        for item in ai_ranked:
+            cand = item.get('candidate')
+            for cd in candidates_data:
+                if cd['user'] == cand:
+                    item['application'] = cd['application']
+                    break
+        ranked = ai_ranked
+    else:
+        ranked = []
+        for cd in candidates_data:
+            ranked.append({
+                'candidate': cd['user'],
+                'application': cd['application'],
+                'ats_score': cd['ats_score'],
+                'match_score': cd['ats_score'],
+                'matching_skills': cd['skills'][:5],
+                'strengths': '',
+                'weakness': '',
+                'recommendation': 'moderate_fit',
+            })
+        ranked.sort(key=lambda x: x.get('match_score', 0), reverse=True)
+
+    context = {
+        'job': job,
+        'ranked_candidates': ranked,
+        'ai_powered': is_ai_available(),
+    }
     return render(request, 'recruiter/rank_candidates.html', context)

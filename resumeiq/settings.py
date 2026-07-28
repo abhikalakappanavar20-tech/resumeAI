@@ -19,6 +19,7 @@ VERCEL_HOSTS = [
 ALLOWED_HOSTS = ['*'] if DEBUG else VERCEL_HOSTS + [
     'localhost',
     '127.0.0.1',
+    '.vercel.app',
 ]
 
 INSTALLED_APPS = [

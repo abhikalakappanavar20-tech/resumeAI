@@ -7,7 +7,8 @@ from jobs.models import Job, JobRecommendation
 from ai_engine.parser import parse_resume
 from ai_engine.scoring import calculate_ats_score
 from ai_engine.ai_services import (generate_cover_letter, generate_interview_questions,
-                                    generate_improvements, analyze_skill_gap, match_jobs)
+                                    generate_improvements, analyze_skill_gap, match_jobs,
+                                    is_ai_available)
 from .serializers import CoverLetterRequestSerializer, SkillGapRequestSerializer
 
 
@@ -36,12 +37,17 @@ class AnalyzeResumeView(APIView):
                 'name': extracted.get('name', ''),
                 'email': extracted.get('email', ''),
                 'phone': extracted.get('phone', ''),
+                'location': extracted.get('location', ''),
                 'skills': extracted.get('skills', []),
                 'education': extracted.get('education', []),
                 'experience': extracted.get('experience', []),
                 'projects': extracted.get('projects', []),
                 'certifications': extracted.get('certifications', []),
                 'summary': extracted.get('summary', ''),
+                'linkedin_url': extracted.get('linkedin_url', ''),
+                'github_url': extracted.get('github_url', ''),
+                'languages': extracted.get('languages', []),
+                'interests': extracted.get('interests', []),
             }
         )
         
@@ -59,6 +65,7 @@ class AnalyzeResumeView(APIView):
             "ats_score": scores['overall_score'],
             "skills_count": len(extracted.get('skills', [])),
             "suggestions": scores.get('suggestions', []),
+            "ai_powered": is_ai_available(),
         })
 
 

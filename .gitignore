@@ -3,21 +3,17 @@ __pycache__/
 *.py[cod]
 *$py.class
 *.so
-.Python
+.env
+.env.local
 env/
 venv/
 .venv/
 
 # Django
 *.log
-local_settings.py
 db.sqlite3
 media/
 staticfiles/
-
-# Environment
-.env
-.env.local
 
 # IDE
 .vscode/
@@ -29,7 +25,5 @@ staticfiles/
 .DS_Store
 Thumbs.db
 
-# Docker
-docker-compose.override.yml
-
+# Vercel
 .vercel

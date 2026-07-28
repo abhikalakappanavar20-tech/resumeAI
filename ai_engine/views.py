@@ -8,7 +8,8 @@ from jobs.models import Job, JobRecommendation
 from .parser import parse_resume
 from .scoring import calculate_ats_score
 from .ai_services import (generate_cover_letter, generate_interview_questions,
-                          generate_improvements, analyze_skill_gap, match_jobs)
+                          generate_improvements, analyze_skill_gap, match_jobs,
+                          is_ai_available)
 
 
 @login_required
@@ -20,27 +21,28 @@ def analyze_resume(request, pk):
     resume = get_object_or_404(Resume, pk=pk, user=request.user)
     resume.status = 'parsing'
     resume.save(update_fields=['status'])
-    
+
     try:
         file_path = resume.file.path
         extracted, raw_text = parse_resume(file_path)
-        
+
         if extracted is None:
             resume.status = 'error'
             resume.save(update_fields=['status'])
             messages.error(request, f'Failed to parse resume: {raw_text}')
             return redirect('resumes:resume_detail', pk=pk)
-        
+
         resume.raw_text = raw_text
         resume.status = 'parsed'
         resume.save(update_fields=['raw_text', 'status'])
-        
+
         extracted_data, _ = ExtractedResumeData.objects.update_or_create(
             resume=resume,
             defaults={
                 'name': extracted.get('name', ''),
                 'email': extracted.get('email', ''),
                 'phone': extracted.get('phone', ''),
+                'location': extracted.get('location', ''),
                 'linkedin_url': extracted.get('linkedin_url', ''),
                 'github_url': extracted.get('github_url', ''),
                 'portfolio_url': extracted.get('portfolio_url', ''),
@@ -50,9 +52,11 @@ def analyze_resume(request, pk):
                 'experience': extracted.get('experience', []),
                 'projects': extracted.get('projects', []),
                 'certifications': extracted.get('certifications', []),
+                'languages': extracted.get('languages', []),
+                'interests': extracted.get('interests', []),
             }
         )
-        
+
         scores = calculate_ats_score(extracted, raw_text=raw_text)
         ats_score, _ = ATSScore.objects.update_or_create(
             resume=resume,
@@ -68,16 +72,18 @@ def analyze_resume(request, pk):
                 'missing_keywords': scores.get('missing_keywords', []),
             }
         )
-        
+
         resume.status = 'analyzed'
         resume.save(update_fields=['status'])
-        messages.success(request, 'Resume analyzed successfully!')
-        
+
+        ai_status = "AI-powered analysis" if is_ai_available() else "Rule-based analysis (add OPENAI_API_KEY for AI)"
+        messages.success(request, f'Resume analyzed successfully! ({ai_status})')
+
     except Exception as e:
         resume.status = 'error'
         resume.save(update_fields=['status'])
         messages.error(request, f'Error analyzing resume: {str(e)}')
-    
+
     return redirect('resumes:resume_detail', pk=pk)
 
 
@@ -85,13 +91,13 @@ def analyze_resume(request, pk):
 def generate_cover_letter_view(request, pk):
     """Generate AI cover letter for a resume."""
     resume = get_object_or_404(Resume, pk=pk, user=request.user)
-    
+
     if request.method == 'POST':
         company = request.POST.get('company', '')
         role = request.POST.get('role', '')
         job_description = request.POST.get('job_description', '')
         tone = request.POST.get('tone', 'professional')
-        
+
         try:
             extracted_data = resume.extracted_data
             data = {
@@ -103,9 +109,9 @@ def generate_cover_letter_view(request, pk):
             }
         except ExtractedResumeData.DoesNotExist:
             data = {'skills': [], 'experience': [], 'summary': '', 'education': [], 'name': ''}
-        
+
         content = generate_cover_letter(data, company, role, job_description)
-        
+
         cover_letter = CoverLetter.objects.create(
             resume=resume,
             company_name=company,
@@ -113,9 +119,14 @@ def generate_cover_letter_view(request, pk):
             content=content,
             tone=tone,
         )
-        messages.success(request, 'Cover letter generated successfully!')
+
+        if is_ai_available():
+            messages.success(request, 'AI-powered cover letter generated successfully!')
+        else:
+            messages.warning(request, 'Cover letter generated (basic template - add OPENAI_API_KEY for AI-powered personalized letters)')
+
         return redirect('resumes:resume_detail', pk=pk)
-    
+
     return redirect('resumes:resume_detail', pk=pk)
 
 
@@ -143,7 +154,12 @@ def generate_interview_questions_view(request, pk):
                 difficulty=q.get('difficulty', 'medium'),
                 category=q.get('category', 'technical'),
             )
-        messages.success(request, f'Generated {len(questions)} interview questions!')
+
+        if is_ai_available():
+            messages.success(request, f'AI generated {len(questions)} personalized interview questions!')
+        else:
+            messages.warning(request, f'Generated {len(questions)} questions (basic template - add OPENAI_API_KEY for AI)')
+
     except Exception as e:
         messages.error(request, f'Error generating questions: {str(e)}')
 
@@ -166,9 +182,9 @@ def generate_improvements_view(request, pk):
             'summary': extracted_data.summary,
         }
         result = generate_improvements(data, resume.raw_text)
-        
+
         improvements_list = result.get('improvements', []) if isinstance(result, dict) else (result if isinstance(result, list) else [])
-        
+
         for imp in improvements_list:
             if isinstance(imp, dict):
                 improved_val = imp.get('improved', imp.get('improved_text', ''))
@@ -184,10 +200,15 @@ def generate_improvements_view(request, pk):
                     improved_text=str(improved_val),
                     explanation=imp.get('explanation', ''),
                 )
-        messages.success(request, 'Improvement suggestions generated!')
+
+        if is_ai_available():
+            messages.success(request, 'AI generated personalized improvement suggestions!')
+        else:
+            messages.warning(request, 'Improvements generated (basic suggestions - add OPENAI_API_KEY for AI)')
+
     except Exception as e:
         messages.error(request, f'Error generating improvements: {str(e)}')
-    
+
     return redirect('resumes:resume_detail', pk=pk)
 
 
@@ -246,7 +267,12 @@ def skill_gap_analysis_view(request, pk):
                 1
             ),
         )
-        messages.success(request, 'Skill gap analysis complete!')
+
+        if is_ai_available():
+            messages.success(request, 'AI-powered skill gap analysis complete!')
+        else:
+            messages.warning(request, 'Skill gap analysis complete (basic - add OPENAI_API_KEY for AI)')
+
     except Exception as e:
         messages.error(request, f'Error: {str(e)}')
 
@@ -255,21 +281,22 @@ def skill_gap_analysis_view(request, pk):
 
 @login_required
 def job_recommendations_view(request, pk):
-    """Get job recommendations for a resume."""
+    """Get AI-powered job recommendations for a resume."""
     resume = get_object_or_404(Resume, pk=pk, user=request.user)
-    
+
     try:
         extracted_data = resume.extracted_data
         data = {
             'skills': extracted_data.skills,
             'experience': extracted_data.experience,
+            'summary': extracted_data.summary,
         }
     except ExtractedResumeData.DoesNotExist:
-        data = {'skills': [], 'experience': []}
-    
+        data = {'skills': [], 'experience': [], 'summary': ''}
+
     active_jobs = Job.objects.filter(status='active')
     recommendations = match_jobs(data, active_jobs)
-    
+
     for rec in recommendations[:20]:
         JobRecommendation.objects.update_or_create(
             candidate=request.user,
@@ -280,10 +307,11 @@ def job_recommendations_view(request, pk):
                 'missing_skills': rec['missing_skills'],
             }
         )
-    
+
     context = {
         'resume': resume,
         'recommendations': recommendations[:20],
+        'ai_powered': is_ai_available(),
     }
     return render(request, 'ai_engine/job_recommendations.html', context)
 
@@ -293,26 +321,27 @@ def analyze_resume_api(request, pk):
     """API endpoint to trigger resume analysis (AJAX)."""
     if request.method != 'POST':
         return JsonResponse({'error': 'POST required'}, status=405)
-    
+
     resume = get_object_or_404(Resume, pk=pk, user=request.user)
-    
+
     try:
         file_path = resume.file.path
         extracted, raw_text = parse_resume(file_path)
-        
+
         if extracted is None:
             return JsonResponse({'error': 'Failed to parse resume'}, status=400)
-        
+
         resume.raw_text = raw_text
         resume.status = 'parsed'
         resume.save(update_fields=['raw_text', 'status'])
-        
+
         ExtractedResumeData.objects.update_or_create(
             resume=resume,
             defaults={
                 'name': extracted.get('name', ''),
                 'email': extracted.get('email', ''),
                 'phone': extracted.get('phone', ''),
+                'location': extracted.get('location', ''),
                 'skills': extracted.get('skills', []),
                 'education': extracted.get('education', []),
                 'experience': extracted.get('experience', []),
@@ -321,9 +350,11 @@ def analyze_resume_api(request, pk):
                 'summary': extracted.get('summary', ''),
                 'linkedin_url': extracted.get('linkedin_url', ''),
                 'github_url': extracted.get('github_url', ''),
+                'languages': extracted.get('languages', []),
+                'interests': extracted.get('interests', []),
             }
         )
-        
+
         scores = calculate_ats_score(extracted, raw_text=raw_text)
         ATSScore.objects.update_or_create(
             resume=resume,
@@ -339,15 +370,16 @@ def analyze_resume_api(request, pk):
                 'missing_keywords': scores.get('missing_keywords', []),
             }
         )
-        
+
         resume.status = 'analyzed'
         resume.save(update_fields=['status'])
-        
+
         return JsonResponse({
             'status': 'success',
             'ats_score': scores['overall_score'],
             'skills_count': len(extracted.get('skills', [])),
+            'ai_powered': is_ai_available(),
         })
-        
+
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)

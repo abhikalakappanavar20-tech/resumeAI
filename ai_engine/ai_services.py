@@ -53,7 +53,7 @@ def _call_ollama(prompt, system_prompt, max_tokens=1500, temperature=0.7):
             },
             "system": system_prompt,
         }
-        r = requests.post(f"{base_url}/api/generate", json=payload, timeout=30)
+        r = requests.post(f"{base_url}/api/generate", json=payload, timeout=60)
         if r.status_code == 200:
             response = r.json().get("response", "")
             return _strip_markdown(response.strip()) if response.strip() else None
@@ -79,7 +79,7 @@ def generate_with_ai(prompt, max_tokens=1500, temperature=0.7):
     if result:
         return result
 
-    return generate_fallback(prompt)
+    return None
 
 
 def _strip_markdown(text):
@@ -115,21 +115,8 @@ def _try_parse_json(text):
     return None
 
 
-def generate_fallback(prompt):
-    prompt_lower = prompt.lower()
-    if 'cover letter' in prompt_lower:
-        return generate_cover_letter_fallback(prompt)
-    elif 'interview question' in prompt_lower:
-        return generate_interview_questions_fallback(prompt)
-    elif 'improve' in prompt_lower or 'suggestion' in prompt_lower:
-        return generate_improvement_fallback(prompt)
-    elif 'skill gap' in prompt_lower:
-        return generate_skill_gap_fallback(prompt)
-    elif 'job match' in prompt_lower or 'recommend' in prompt_lower:
-        return generate_job_match_fallback(prompt)
-    elif 'candidate rank' in prompt_lower or 'match score' in prompt_lower:
-        return generate_candidate_match_fallback(prompt)
-    return "AI analysis complete. Please review the results below."
+def is_ai_available():
+    return bool(OPENAI_API_KEY)
 
 
 def generate_cover_letter(resume_data, company, role, job_description=""):
@@ -175,7 +162,20 @@ Requirements:
 5. End with "Sincerely," followed by the candidate's name ({candidate_name})
 6. Keep it under 300 words, professional tone"""
 
-    return generate_with_ai(prompt, max_tokens=800, temperature=0.7)
+    result = generate_with_ai(prompt, max_tokens=800, temperature=0.7)
+    if result:
+        return result
+
+    return f"""Dear Hiring Manager,
+
+I am writing to express my strong interest in the {role} position at {company}. With my background in {skills[:100] if skills else 'software development'} and passion for creating impactful solutions, I believe I would be a valuable addition to your team.
+
+Throughout my career, I have developed expertise in building scalable applications, working with modern technologies, and collaborating effectively with cross-functional teams. My technical skills, combined with my problem-solving abilities, enable me to deliver high-quality results consistently.
+
+{f"I am excited about the opportunity to contribute to {company}'s success" if company else 'I am excited about the opportunity to contribute to your organization\'s success'} and would welcome the chance to discuss how my skills and experience align with your needs. Thank you for considering my application.
+
+Sincerely,
+{candidate_name}"""
 
 
 def generate_interview_questions(resume_data, skills=None):
@@ -206,7 +206,14 @@ Return ONLY the JSON array, no markdown, no extra text."""
     parsed = _try_parse_json(response)
     if isinstance(parsed, list) and len(parsed) > 0:
         return parsed
-    return json.loads(generate_interview_questions_fallback(""))
+
+    return [
+        {"skill": skills[0] if skills else "Python", "question": f"Explain the core concepts and best practices of {skills[0] if skills else 'Python'}.", "difficulty": "easy", "category": "technical"},
+        {"skill": skills[0] if skills else "Python", "question": f"Describe a complex project where you used {skills[0] if skills else 'Python'}. What challenges did you face?", "difficulty": "medium", "category": "technical"},
+        {"skill": skills[1] if len(skills) > 1 else "General", "question": f"How do you approach debugging and testing in {skills[1] if len(skills) > 1 else 'your development workflow'}?", "difficulty": "medium", "category": "technical"},
+        {"skill": "General", "question": "Tell me about a challenging project you worked on and how you overcame the difficulties.", "difficulty": "medium", "category": "behavioral"},
+        {"skill": "General", "question": "How do you stay updated with the latest technologies?", "difficulty": "easy", "category": "behavioral"},
+    ]
 
 
 def generate_improvements(resume_data, raw_text):
@@ -247,7 +254,29 @@ Return ONLY valid JSON, no markdown."""
         return parsed
     if isinstance(parsed, list):
         return {'improvements': parsed}
-    return json.loads(generate_improvement_fallback(""))
+
+    return {
+        "improvements": [
+            {
+                "section": "Summary",
+                "original": summary if summary != 'N/A' else "Professional seeking new opportunities.",
+                "improved": f"Results-driven professional with expertise in {skills[:100] if skills else 'software development'}, passionate about delivering high-quality solutions and driving innovation.",
+                "explanation": "Made the summary more specific, added quantifiable experience, and highlighted key technologies."
+            },
+            {
+                "section": "Experience",
+                "original": exp_text.strip() if exp_text else "No experience listed",
+                "improved": "Developed and maintained scalable web applications using modern technologies, implementing RESTful APIs, database optimization, and best practices, resulting in significant performance improvements.",
+                "explanation": "Added specific metrics, technologies used, and measurable impact."
+            },
+            {
+                "section": "Skills",
+                "original": skills if skills else "Add your skills",
+                "improved": f"{skills}, REST APIs, Git, Docker, CI/CD, Agile/Scrum" if skills else "Python, Django, REST APIs, Git, Docker, CI/CD",
+                "explanation": "Expanded the skills list with relevant technologies that are commonly sought by employers."
+            }
+        ]
+    }
 
 
 def analyze_skill_gap(resume_data, target_role):
@@ -281,41 +310,189 @@ Return ONLY valid JSON, no markdown."""
     parsed = _try_parse_json(response)
     if isinstance(parsed, dict):
         return parsed
-    return json.loads(generate_skill_gap_fallback(""))
+
+    return {
+        "missing_skills": [
+            {"skill": "Cloud Platforms (AWS/GCP/Azure)", "importance": "high", "category": "Cloud"},
+            {"skill": "Docker & Kubernetes", "importance": "high", "category": "DevOps"},
+            {"skill": "CI/CD Pipelines", "importance": "medium", "category": "DevOps"},
+            {"skill": "System Design", "importance": "high", "category": "Architecture"},
+            {"skill": "Testing Frameworks", "importance": "medium", "category": "Quality"},
+        ],
+        "recommendations": [
+            f"Focus on cloud platforms - essential for modern {target_role} roles.",
+            "Learn containerization with Docker and orchestration with Kubernetes.",
+            "Build projects that demonstrate system design thinking.",
+            "Practice with testing frameworks relevant to your tech stack.",
+        ],
+        "learning_roadmap": [
+            {"phase": "Beginner", "skills": ["Cloud Fundamentals", "Docker Basics"]},
+            {"phase": "Intermediate", "skills": ["Kubernetes", "CI/CD", "System Design"]},
+            {"phase": "Advanced", "skills": ["Microservices", "Infrastructure as Code", "Monitoring"]}
+        ]
+    }
 
 
 def match_jobs(resume_data, jobs):
-    skills = set(s.lower() for s in resume_data.get('skills', []))
+    skills = resume_data.get('skills', [])
+    experience = resume_data.get('experience', [])
+    summary = resume_data.get('summary', '')
+    skills_text = ', '.join(skills[:15])
+
+    jobs_context = ""
+    for job in jobs[:20]:
+        req_skills = ', '.join(job.required_skills or [])
+        pref_skills = ', '.join(job.preferred_skills or [])
+        jobs_context += f"""
+- Job ID: {job.id}, Title: {job.title} at {job.company_name}
+  Required Skills: {req_skills}
+  Preferred Skills: {pref_skills}
+  Description: {(job.description or '')[:200]}
+  Experience: {job.experience_required}
+  Type: {job.job_type}
+"""
+
+    prompt = f"""You are an expert career matching AI. Analyze the candidate and match them against these job listings.
+
+Candidate Profile:
+- Skills: {skills_text}
+- Experience: {len(experience)} positions
+- Summary: {summary[:300] if summary else 'N/A'}
+
+Available Jobs:
+{jobs_context}
+
+For EACH job, provide:
+1. A match_score (0-100) based on how well the candidate fits
+2. A list of matching_skills (skills the candidate has that match the job)
+3. A list of missing_skills (skills the job requires but candidate lacks)
+4. A brief reason for the score
+
+Return as a JSON array of objects with these fields:
+- "job_id": the job ID (UUID string)
+- "match_score": number 0-100
+- "matching_skills": array of skill strings
+- "missing_skills": array of skill strings
+- "reason": brief explanation string
+
+Return ONLY the JSON array, sorted by match_score descending."""
+
+    response = generate_with_ai(prompt, max_tokens=2000, temperature=0.3)
+    parsed = _try_parse_json(response)
+
     recommendations = []
+    job_map = {str(job.id): job for job in jobs}
+
+    if isinstance(parsed, list):
+        for item in parsed:
+            job_id = item.get('job_id', '')
+            job = job_map.get(job_id)
+            if not job:
+                continue
+            recommendations.append({
+                'job': job,
+                'match_score': min(max(item.get('match_score', 0), 0), 100),
+                'matching_skills': item.get('matching_skills', []),
+                'missing_skills': item.get('missing_skills', []),
+                'reason': item.get('reason', ''),
+            })
+
+    if recommendations:
+        recommendations.sort(key=lambda x: x['match_score'], reverse=True)
+        return recommendations
+
+    skills_set = set(s.lower() for s in skills)
     for job in jobs:
         job_skills = set(s.lower() for s in (job.required_skills or []))
         preferred = set(s.lower() for s in (job.preferred_skills or []))
         if not job_skills:
             score = 50
         else:
-            required_match = len(skills.intersection(job_skills)) / max(len(job_skills), 1)
-            preferred_match = len(skills.intersection(preferred)) / max(len(preferred), 1) * 0.3
+            required_match = len(skills_set.intersection(job_skills)) / max(len(job_skills), 1)
+            preferred_match = len(skills_set.intersection(preferred)) / max(len(preferred), 1) * 0.3
             score = min((required_match * 0.7 + preferred_match) * 100, 100)
-        matching = list(skills.intersection(job_skills.union(preferred)))
-        missing = list(job_skills - skills)
+        matching = list(skills_set.intersection(job_skills.union(preferred)))
+        missing = list(job_skills - skills_set)
         recommendations.append({
             'job': job,
             'match_score': round(score, 1),
             'matching_skills': matching,
             'missing_skills': missing,
+            'reason': '',
         })
     recommendations.sort(key=lambda x: x['match_score'], reverse=True)
     return recommendations
 
 
 def rank_candidates(candidates_data, job):
-    job_skills = set(s.lower() for s in (job.required_skills or []))
+    job_skills = ', '.join(job.required_skills or [])
+    job_desc = (job.description or '')[:300]
+
+    candidates_context = ""
+    for i, data in enumerate(candidates_data):
+        c_skills = ', '.join(data.get('skills', []))
+        candidates_context += f"""
+- Candidate #{i+1} (ID: {i+1})
+  Skills: {c_skills}
+  ATS Score: {data.get('ats_score', 0)}
+  Summary: {(data.get('summary', '') or '')[:150]}
+"""
+
+    prompt = f"""You are an expert recruiter AI. Rank these candidates for a job position.
+
+Job: {job.title} at {job.company_name}
+Required Skills: {job_skills}
+Description: {job_desc}
+Experience Required: {job.experience_required}
+
+Candidates:
+{candidates_context}
+
+For EACH candidate, provide:
+1. A match_score (0-100) based on fit for this specific role
+2. A list of matching_skills
+3. A brief strengths assessment
+4. A brief weakness or gap
+
+Return as a JSON array sorted by match_score (highest first). Each object:
+- "candidate_index": number (1-based index matching the candidate order above)
+- "match_score": number 0-100
+- "matching_skills": array of strings
+- "strengths": brief string
+- "weakness": brief string
+- "recommendation": "strong_fit" / "good_fit" / "moderate_fit" / "weak_fit"
+
+Return ONLY the JSON array."""
+
+    response = generate_with_ai(prompt, max_tokens=2000, temperature=0.3)
+    parsed = _try_parse_json(response)
+
     ranked = []
+    if isinstance(parsed, list):
+        for item in parsed:
+            idx = item.get('candidate_index', 1) - 1
+            if 0 <= idx < len(candidates_data):
+                data = candidates_data[idx]
+                ranked.append({
+                    'candidate': data.get('user'),
+                    'ats_score': data.get('ats_score', 0),
+                    'match_score': min(max(item.get('match_score', 0), 0), 100),
+                    'matching_skills': item.get('matching_skills', []),
+                    'strengths': item.get('strengths', ''),
+                    'weakness': item.get('weakness', ''),
+                    'recommendation': item.get('recommendation', 'moderate_fit'),
+                })
+
+    if ranked:
+        ranked.sort(key=lambda x: x['match_score'], reverse=True)
+        return ranked
+
+    job_skills_set = set(s.lower() for s in (job.required_skills or []))
     for data in candidates_data:
         candidate_skills = set(s.lower() for s in data.get('skills', []))
         ats_score = data.get('ats_score', 0)
-        if job_skills:
-            skill_match = len(candidate_skills.intersection(job_skills)) / max(len(job_skills), 1)
+        if job_skills_set:
+            skill_match = len(candidate_skills.intersection(job_skills_set)) / max(len(job_skills_set), 1)
         else:
             skill_match = 0.5
         match_score = (skill_match * 60 + (ats_score / 100) * 40)
@@ -323,113 +500,10 @@ def rank_candidates(candidates_data, job):
             'candidate': data.get('user'),
             'ats_score': ats_score,
             'match_score': round(match_score, 1),
-            'matching_skills': list(candidate_skills.intersection(job_skills)),
+            'matching_skills': list(candidate_skills.intersection(job_skills_set)),
+            'strengths': '',
+            'weakness': '',
+            'recommendation': 'moderate_fit',
         })
     ranked.sort(key=lambda x: x['match_score'], reverse=True)
     return ranked
-
-
-def generate_cover_letter_fallback(prompt):
-    name = "Candidate"
-    import re
-    match = re.search(r"Name:\s*(.+?)(?:\n|$)", prompt)
-    if match:
-        name = match.group(1).strip()
-    return f"""Dear Hiring Manager,
-
-I am writing to express my strong interest in the position at your esteemed organization. With my background in software development and passion for creating impactful solutions, I believe I would be a valuable addition to your team.
-
-Throughout my career, I have developed expertise in building scalable applications, working with modern technologies, and collaborating effectively with cross-functional teams. My technical skills, combined with my problem-solving abilities, enable me to deliver high-quality results consistently.
-
-I am excited about the opportunity to contribute to your organization's success and would welcome the chance to discuss how my skills and experience align with your needs. Thank you for considering my application.
-
-Sincerely,
-{name}"""
-
-
-def generate_interview_questions_fallback(prompt):
-    questions = [
-        {"skill": "Python", "question": "Explain the difference between a list and a tuple in Python.", "difficulty": "easy", "category": "technical"},
-        {"skill": "Django", "question": "Explain Django's MVT (Model-View-Template) architecture.", "difficulty": "medium", "category": "technical"},
-        {"skill": "SQL", "question": "What are the different types of SQL JOINs? Explain with examples.", "difficulty": "medium", "category": "technical"},
-        {"skill": "REST API", "question": "What are REST APIs? Explain the difference between GET, POST, PUT, and DELETE.", "difficulty": "easy", "category": "technical"},
-        {"skill": "Docker", "question": "What is Docker? Explain the difference between a Docker image and a container.", "difficulty": "medium", "category": "technical"},
-        {"skill": "General", "question": "Tell me about a challenging project you worked on and how you overcame the difficulties.", "difficulty": "medium", "category": "behavioral"},
-        {"skill": "General", "question": "How do you stay updated with the latest technologies?", "difficulty": "easy", "category": "behavioral"},
-        {"skill": "General", "question": "Describe your experience with agile/scrum development methodologies.", "difficulty": "medium", "category": "behavioral"},
-        {"skill": "Python", "question": "What is the difference between Django ORM and raw SQL? When would you use each?", "difficulty": "hard", "category": "technical"},
-        {"skill": "General", "question": "How do you handle code reviews and feedback from peers?", "difficulty": "easy", "category": "behavioral"},
-    ]
-    return json.dumps(questions)
-
-
-def generate_improvement_fallback(prompt):
-    return json.dumps({
-        "improvements": [
-            {
-                "section": "Summary",
-                "original": "Looking for a job in software development.",
-                "improved": "Results-driven software developer with 3+ years of experience in building scalable web applications using Python, Django, and modern front-end technologies. Passionate about writing clean, maintainable code and delivering impactful user experiences.",
-                "explanation": "Made the summary more specific, added quantifiable experience, and highlighted key technologies."
-            },
-            {
-                "section": "Experience",
-                "original": "Worked on Django project.",
-                "improved": "Developed and maintained a scalable Django-based web application serving 10,000+ daily users, implementing RESTful APIs, PostgreSQL database optimization, and JWT authentication, resulting in a 40% improvement in API response times.",
-                "explanation": "Added specific metrics, technologies used, and measurable impact."
-            },
-            {
-                "section": "Skills",
-                "original": "Python, HTML, CSS",
-                "improved": "Python, Django, REST APIs, PostgreSQL, HTML5, CSS3, JavaScript, Git, Docker, AWS, CI/CD, Agile/Scrum",
-                "explanation": "Expanded the skills list with relevant technologies that are commonly sought by employers."
-            }
-        ]
-    })
-
-
-def generate_skill_gap_fallback(prompt):
-    return json.dumps({
-        "missing_skills": [
-            {"skill": "Docker", "importance": "high", "category": "DevOps"},
-            {"skill": "REST API Design", "importance": "high", "category": "Backend"},
-            {"skill": "AWS", "importance": "medium", "category": "Cloud"},
-            {"skill": "Redis", "importance": "medium", "category": "Database"},
-            {"skill": "Celery", "importance": "medium", "category": "Backend"},
-            {"skill": "pytest", "importance": "high", "category": "Testing"},
-            {"skill": "CI/CD", "importance": "medium", "category": "DevOps"},
-        ],
-        "recommendations": [
-            "Start with Docker basics - it's essential for modern development workflows.",
-            "Learn REST API design principles and best practices.",
-            "Get familiar with at least one cloud platform (AWS recommended).",
-            "Understand caching with Redis for performance optimization.",
-            "Learn unit testing with pytest for better code quality.",
-        ],
-        "learning_roadmap": [
-            {"phase": "Beginner", "skills": ["Docker Basics", "REST API Fundamentals", "Git Advanced"]},
-            {"phase": "Intermediate", "skills": ["AWS Core Services", "Redis", "Celery", "pytest"]},
-            {"phase": "Advanced", "skills": ["Kubernetes", "CI/CD Pipelines", "Microservices", "System Design"]}
-        ]
-    })
-
-
-def generate_job_match_fallback(prompt):
-    return json.dumps([
-        {"title": "Python Developer", "match_score": 95, "company": "Tech Corp"},
-        {"title": "Backend Developer", "match_score": 90, "company": "InnovateTech"},
-        {"title": "Django Developer", "match_score": 89, "company": "WebSolutions"},
-        {"title": "Full Stack Developer", "match_score": 82, "company": "DigitalAgency"},
-        {"title": "Software Engineer", "match_score": 80, "company": "StartupXYZ"},
-    ])
-
-
-def generate_candidate_match_fallback(prompt):
-    return json.dumps({
-        "match_score": 85,
-        "matching_skills": ["Python", "Django", "SQL", "Git"],
-        "missing_skills": ["Docker", "AWS", "Redis"],
-        "strengths": ["Strong Python experience", "Good educational background"],
-        "weaknesses": ["Limited cloud experience", "No DevOps experience"],
-        "recommendation": "Strong candidate with solid fundamentals. Recommend for interview with focus on cloud/DevOps growth potential."
-    })

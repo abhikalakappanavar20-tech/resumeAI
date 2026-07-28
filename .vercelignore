@@ -11,20 +11,14 @@ staticfiles/
 # Docker
 Dockerfile
 docker-compose.yml
-docker-compose.override.yml
 
 # Environment
 .env
 .env.local
-.env.example
 
 # Git
 .git/
 .gitignore
-
-# Documentation
-*.md
-LICENSE
 
 # IDE
 .vscode/
@@ -43,10 +37,3 @@ __pycache__/
 *.egg-info/
 dist/
 build/
-
-# Unused heavy files
-requirements.txt
-gunicorn
-docker-compose.yml
-Dockerfile
-build.sh
