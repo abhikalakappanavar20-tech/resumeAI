@@ -24,8 +24,11 @@ ALLOWED_HOSTS = ['*'] if DEBUG else VERCEL_HOSTS + [
 
 if IS_VERCEL:
     vercel_url = os.environ.get('VERCEL_URL', '')
+    branch_url = os.environ.get('VERCEL_BRANCH_URL', '')
     if vercel_url:
-        ALLOWED_HOSTS.append(vercel_url)
+        ALLOWED_HOSTS.append(vercel_url.replace('https://', '').split('/')[0])
+    if branch_url:
+        ALLOWED_HOSTS.append(branch_url)
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -78,9 +81,9 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'resumeiq.wsgi.application'
 
-DATABASE_URL = os.environ.get('DATABASE_URL', '')
+DATABASE_URL = os.environ.get('DATABASE_URL', '').strip()
 if DATABASE_URL:
-    if '[YOUR-PASSWORD]' in DATABASE_URL:
+    if '[YOUR-PASSWORD]' in DATABASE_URL or '[YOUR-' in DATABASE_URL:
         DATABASE_URL = ''
     else:
         try:
@@ -98,7 +101,7 @@ if not DATABASE_URL:
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': os.environ.get('DB_NAME', str(BASE_DIR / 'db.sqlite3')),
+            'NAME': str(BASE_DIR / 'db.sqlite3'),
         }
     }
 
