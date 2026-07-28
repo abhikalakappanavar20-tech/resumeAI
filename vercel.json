@@ -1,8 +1,6 @@
 {
     "version": 2,
     "installCommand": "pip install --no-compile --no-cache-dir -r requirements-vercel.txt",
-    "buildCommand": "",
-    "outputDirectory": "staticfiles",
     "builds": [
         {
             "src": "vercel_app/index.py",

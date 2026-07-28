@@ -10,9 +10,13 @@ DEBUG = os.environ.get('DJANGO_DEBUG', 'True') == 'True'
 
 IS_VERCEL = os.environ.get('VERCEL', '') == '1'
 
-ALLOWED_HOSTS = ['*'] if DEBUG else [
+VERCEL_HOSTS = [
+    'resume-ai-sigma-six.vercel.app',
     'resume-ai-1m88.vercel.app',
     'resumeai.vercel.app',
+]
+
+ALLOWED_HOSTS = ['*'] if DEBUG else VERCEL_HOSTS + [
     'localhost',
     '127.0.0.1',
 ]
@@ -34,7 +38,6 @@ INSTALLED_APPS = [
     'recruiter',
     'analytics',
     'core',
-    'api',
 ]
 
 MIDDLEWARE = [
@@ -79,13 +82,6 @@ if DATABASE_URL:
             conn_health_checks=True,
         )
     }
-elif IS_VERCEL:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': '/tmp/db.sqlite3',
-        }
-    }
 else:
     DATABASES = {
         'default': {
@@ -108,9 +104,9 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
-STATIC_ROOT = BASE_DIR / 'staticfiles' if not IS_VERCEL else '/tmp/staticfiles'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media' if not IS_VERCEL else '/tmp/media'
+MEDIA_ROOT = BASE_DIR / 'media'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
@@ -147,11 +143,15 @@ OLLAMA_MODEL = os.environ.get('OLLAMA_MODEL', 'qwen2.5:0.5b')
 
 OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY', '')
 
-# Vercel payload size limits
-DATA_UPLOAD_MAX_MEMORY_SIZE = 4 * 1024 * 1024  # 4MB
-FILE_UPLOAD_MAX_MEMORY_SIZE = 4 * 1024 * 1024  # 4MB
+DATA_UPLOAD_MAX_MEMORY_SIZE = 4 * 1024 * 1024
+FILE_UPLOAD_MAX_MEMORY_SIZE = 4 * 1024 * 1024
 
-# Fix Django message tags (Bootstrap uses 'danger' not 'error')
+STORAGES = {
+    'staticfiles': {
+        'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage',
+    },
+}
+
 from django.contrib.messages import constants as message_constants
 MESSAGE_TAGS = {
     message_constants.DEBUG: 'secondary',
