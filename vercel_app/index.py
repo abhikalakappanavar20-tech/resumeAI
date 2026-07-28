@@ -13,23 +13,29 @@ django.setup()
 from django.core.management import call_command
 from django.db import connection
 
-def migrate_clean():
+def reset_and_migrate():
     try:
-        call_command('migrate', interactive=False, verbosity=0)
-        return
+        from django.conf import settings
+        db_engine = settings.DATABASES['default']['ENGINE']
+        if 'postgresql' in db_engine or 'psycopg' in db_engine:
+            with connection.cursor() as cursor:
+                cursor.execute("""
+                    DO $$ DECLARE
+                        r RECORD;
+                    BEGIN
+                        FOR r IN (SELECT tablename FROM pg_tables WHERE schemaname = current_schema()) LOOP
+                            EXECUTE 'DROP TABLE IF EXISTS ' || quote_ident(r.tablename) || ' CASCADE';
+                        END LOOP;
+                    END $$;
+                """)
+            call_command('migrate', interactive=False, verbosity=0)
+            print("[Startup] Migrate succeeded after full reset")
+        else:
+            call_command('migrate', interactive=False, verbosity=0)
     except Exception as e:
-        msg = str(e)
-        print(f"[Startup] Migrate error: {msg}")
-        if 'applied before its dependency' in msg or 'relation' in msg:
-            try:
-                with connection.cursor() as cursor:
-                    cursor.execute("DROP TABLE IF EXISTS django_migrations CASCADE")
-                call_command('migrate', '--fake-initial', interactive=False, verbosity=0)
-                print("[Startup] Migrate succeeded after reset")
-            except Exception as e2:
-                print(f"[Startup] Migrate reset failed: {e2}")
+        print(f"[Startup] Full reset failed: {e}")
 
-migrate_clean()
+reset_and_migrate()
 
 from django.core.wsgi import get_wsgi_application
 app = get_wsgi_application()
