@@ -11,14 +11,11 @@ import django
 django.setup()
 
 from django.core.management import call_command
-from django.conf import settings
 
-is_sqlite = 'sqlite3' in settings.DATABASES.get('default', {}).get('ENGINE', '')
-if is_sqlite:
-    try:
-        call_command('migrate', interactive=False, run_syncdb=True)
-    except Exception as e:
-        print(f"[Startup] Migration error: {e}")
+try:
+    call_command('migrate', interactive=False, verbosity=0)
+except Exception as e:
+    print(f"[Startup] Migrate error: {e}")
 
 from django.core.wsgi import get_wsgi_application
 application = get_wsgi_application()
