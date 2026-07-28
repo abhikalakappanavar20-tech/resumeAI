@@ -10,5 +10,17 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'resumeiq.settings')
 import django
 django.setup()
 
+from django.core.management import call_command
+from django.conf import settings
+
+# Run migrations on serverless startup
+is_sqlite = 'sqlite3' in settings.DATABASES.get('default', {}).get('ENGINE', '')
+if is_sqlite:
+    try:
+        call_command('makemigrations', interactive=False)
+        call_command('migrate', interactive=False, run_syncdb=True)
+    except Exception:
+        pass
+
 from django.core.wsgi import get_wsgi_application
 application = get_wsgi_application()
