@@ -98,10 +98,11 @@ if DATABASE_URL:
         except Exception:
             DATABASE_URL = ''
 if not DATABASE_URL:
+    db_path = '/tmp/db.sqlite3' if IS_VERCEL else str(BASE_DIR / 'db.sqlite3')
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': str(BASE_DIR / 'db.sqlite3'),
+            'NAME': db_path,
         }
     }
 
